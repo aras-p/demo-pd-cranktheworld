@@ -30,10 +30,24 @@ set(PLAYDATE_GAME_DEVICE playdate_demo_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 
+set (DEMO_SOURCES
+	src/main.c
+	src/mini3d/3dmath.c
+	src/mini3d/3dmath.h
+	src/mini3d/mini3d.c
+	src/mini3d/mini3d.h
+	src/mini3d/render.c
+	src/mini3d/render.h
+	src/mini3d/scene.c
+	src/mini3d/scene.h
+	src/mini3d/shape.c
+	src/mini3d/shape.h
+)
+
 if (TOOLCHAIN STREQUAL "armgcc")
-	add_executable(${PLAYDATE_GAME_DEVICE} src/main.c)
+	add_executable(${PLAYDATE_GAME_DEVICE} ${DEMO_SOURCES})
 else()
-	add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c )
+	add_library(${PLAYDATE_GAME_NAME} SHARED ${DEMO_SOURCES})
 endif()
 
 include(${SDK}/C_API/buildsupport/playdate_game.cmake)
