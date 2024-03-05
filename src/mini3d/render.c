@@ -108,13 +108,12 @@ static inline int32_t slope(float x1, float y1, float x2, float y2)
 	float dy = y2-y1;
 	
 	if ( dy < 1 )
-		return dx * (1<<16);
+		return (int32_t)(dx * (1<<16));
 	else
-		return dx / dy * (1<<16);
+		return (int32_t)(dx / dy * (1<<16));
 }
 
-LCDRowRange
-drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, int thick, const uint8_t pattern[8])
+void drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, int thick, const uint8_t pattern[8])
 {
 	if ( p1->y > p2->y )
 	{
@@ -123,24 +122,24 @@ drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, i
 		p2 = tmp;
 	}
 
-	int y = p1->y;
-	int endy = p2->y;
+	int y = (int)p1->y;
+	int endy = (int)p2->y;
 	
 	if ( y >= LCD_ROWS || endy < 0 || MIN(p1->x, p2->x) >= LCD_COLUMNS || MAX(p1->x, p2->x) < 0 )
-		return (LCDRowRange){ 0, 0 };
+		return;
 	
-	int32_t x = p1->x * (1<<16);
+	int32_t x = (int32_t)(p1->x * (1<<16));
 	int32_t dx = slope(p1->x, p1->y, p2->x, p2->y);
 	float py = p1->y;
 	
 	if ( y < 0 )
 	{
-		x += -p1->y * dx;
+		x += (int32_t)(-p1->y * dx);
 		y = 0;
 		py = 0;
 	}
 
-	int32_t x1 = x + dx * (y+1-py);
+	int32_t x1 = (int32_t)(x + dx * (y+1-py));
 
 	while ( y <= endy )
 	{
@@ -148,7 +147,7 @@ drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, i
 		uint32_t color = (p<<24) | (p<<16) | (p<<8) | p;
 		
 		if ( y == endy )
-			x1 = p2->x * (1<<16);
+			x1 = (int32_t)(p2->x * (1<<16));
 		
 		if ( dx < 0 )
 			drawFragment((uint32_t*)&bitmap[y*rowstride], x1>>16, (x>>16) + thick, color);
@@ -161,8 +160,6 @@ drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, i
 		x = x1;
 		x1 += dx;
 	}
-	
-	return (LCDRowRange){ MAX(0, p1->y), MIN(LCD_ROWS, p2->y) };
 }
 
 static void fillRange(uint8_t* bitmap, int rowstride, int y, int endy, int32_t* x1p, int32_t dx1, int32_t* x2p, int32_t dx2, const uint8_t pattern[8])
@@ -242,18 +239,18 @@ static inline void sortTri(const Point3D** p1, const Point3D** p2, const Point3D
 
 }
 
-LCDRowRange fillTriangle(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, const Point3D* p3, const uint8_t pattern[8])
+void fillTriangle(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, const Point3D* p3, const uint8_t pattern[8])
 {
 	// sort by y coord
 	
 	sortTri(&p1, &p2, &p3);
 	
-	int endy = MIN(LCD_ROWS, p3->y);
+	int endy = MIN(LCD_ROWS, (int)p3->y);
 	
 	if ( p1->y > LCD_ROWS || endy < 0 )
-		return (LCDRowRange){ 0, 0 };
+		return;
 
-	int32_t x1 = p1->x * (1<<16);
+	int32_t x1 = (int32_t)(p1->x * (1<<16));
 	int32_t x2 = x1;
 	
 	int32_t sb = slope(p1->x, p1->y, p2->x, p2->y);
@@ -262,20 +259,18 @@ LCDRowRange fillTriangle(uint8_t* bitmap, int rowstride, const Point3D* p1, cons
 	int32_t dx1 = MIN(sb, sc);
 	int32_t dx2 = MAX(sb, sc);
 	
-	fillRange(bitmap, rowstride, p1->y, MIN(LCD_ROWS, p2->y), &x1, dx1, &x2, dx2, pattern);
+	fillRange(bitmap, rowstride, (int)p1->y, MIN(LCD_ROWS, (int)p2->y), &x1, dx1, &x2, dx2, pattern);
 	
 	int dx = slope(p2->x, p2->y, p3->x, p3->y);
 	
 	if ( sb < sc )
 	{
-		x1 = p2->x * (1<<16);
-		fillRange(bitmap, rowstride, p2->y, endy, &x1, dx, &x2, dx2, pattern);
+		x1 = (int32_t)(p2->x * (1<<16));
+		fillRange(bitmap, rowstride, (int)p2->y, endy, &x1, dx, &x2, dx2, pattern);
 	}
 	else
 	{
-		x2 = p2->x * (1<<16);
-		fillRange(bitmap, rowstride, p2->y, endy, &x1, dx1, &x2, dx, pattern);
+		x2 = (int32_t)(p2->x * (1<<16));
+		fillRange(bitmap, rowstride, (int)p2->y, endy, &x1, dx1, &x2, dx, pattern);
 	}
-	
-	return (LCDRowRange){ MAX(0, p1->y), endy };
 }

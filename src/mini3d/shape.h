@@ -13,14 +13,6 @@
 
 typedef struct
 {
-	uint16_t p1;
-	uint16_t p2;
-	uint16_t p3;
-	float colorBias;
-} Face3D;
-
-typedef struct
-{
 	int nPoints;
 	const Point3D* points;
 	int nFaces;
