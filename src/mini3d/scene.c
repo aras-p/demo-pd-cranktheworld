@@ -252,9 +252,9 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 	const uint16_t* ibPtr = shape->faces;
 	for (int i = 0; i < shape->nFaces; ++i, ibPtr += 3)
 	{
-		uint16_t idx0 = ibPtr[0] - 1;
-		uint16_t idx1 = ibPtr[1] - 1;
-		uint16_t idx2 = ibPtr[2] - 1;
+		uint16_t idx0 = ibPtr[0];
+		uint16_t idx1 = ibPtr[1];
+		uint16_t idx2 = ibPtr[2];
 		FaceInstance* face = &scene->tmp_faces[i];
 		scene->tmp_order_table[i] = i;
 		face->normal = v3_tri_normal(&scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2]);
@@ -282,9 +282,9 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 	for (int i = 0; i < shape->nFaces; ++i)
 	{
 		uint16_t fi = scene->tmp_order_table[i];
-		uint16_t idx0 = shape->faces[fi * 3 + 0] - 1;
-		uint16_t idx1 = shape->faces[fi * 3 + 1] - 1;
-		uint16_t idx2 = shape->faces[fi * 3 + 2] - 1;
+		uint16_t idx0 = shape->faces[fi * 3 + 0];
+		uint16_t idx1 = shape->faces[fi * 3 + 1];
+		uint16_t idx2 = shape->faces[fi * 3 + 2];
 		drawShapeFace(scene, buffer, rowstride, &scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2], &scene->tmp_faces[fi], style, colorBias); //@TODO: face bias
 	}
 }
