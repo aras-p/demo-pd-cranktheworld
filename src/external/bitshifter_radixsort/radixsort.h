@@ -34,20 +34,8 @@ extern "C" {
 extern uint32_t radix8sort_u32(uint32_t* restrict keys_in_out, uint32_t* restrict keys_temp,
     uint32_t* restrict values_in_out, uint32_t* values_temp, uint32_t size);
 
-extern uint32_t radix8sort_u64(uint64_t* restrict keys_in_out, uint64_t* restrict keys_temp,
-    uint32_t* restrict values_in_out, uint32_t* values_temp, uint32_t size);
-
 extern uint32_t radix8sort_f32(float* restrict keys_in_out, float* restrict keys_temp,
     uint32_t* restrict values_in_out, uint32_t* restrict values_temp, uint32_t size);
-
-extern uint32_t radix11sort_u32(uint32_t* restrict keys_in, uint32_t* restrict keys_out,
-    uint32_t* restrict values_in, uint32_t* restrict values_out, uint32_t size);
-
-extern uint32_t radix11sort_u64(uint64_t* restrict keys_in_out, uint64_t* restrict keys_temp,
-    uint32_t* restrict values_in_out, uint32_t* values_temp, uint32_t size);
-
-extern uint32_t radix11sort_f32(float* restrict keys_in, float* restrict keys_out,
-    uint32_t* restrict values_in, uint32_t* restrict values_out, uint32_t size);
 
 #ifdef __cplusplus
 }
