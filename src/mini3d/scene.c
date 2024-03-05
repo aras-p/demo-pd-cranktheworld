@@ -1,6 +1,6 @@
-#include <stdlib.h>
 #include <string.h>
 #include "../mathlib.h"
+#include "../external/bitshifter_radixsort/radixsort.h"
 #include "mini3d.h"
 #include "scene.h"
 #include "shape.h"
@@ -8,27 +8,6 @@
 
 #define WIDTH 400
 #define HEIGHT 240
-
-struct FaceInstance
-{
-	float3 normal;
-	float midz;
-};
-typedef struct FaceInstance FaceInstance;
-
-static Scene3D* s_facesort_instance;
-static int compareFaceZ(const void* a, const void* b)
-{
-	uint16_t idxa = *(const uint16_t*)a;
-	uint16_t idxb = *(const uint16_t*)b;
-	float za = s_facesort_instance->tmp_faces[idxa].midz;
-	float zb = s_facesort_instance->tmp_faces[idxb].midz;
-	if (za < zb)
-		return +1;
-	if (za > zb)
-		return -1;
-	return 0;
-}
 
 void Scene3D_init(Scene3D* scene)
 {
@@ -39,18 +18,21 @@ void Scene3D_init(Scene3D* scene)
 
 	scene->tmp_points_cap = scene->tmp_faces_cap = 0;
 	scene->tmp_points = NULL;
-	scene->tmp_faces = NULL;
-	scene->tmp_order_table = NULL;
+	scene->tmp_face_normals = NULL;
+	scene->tmp_order_table1 = NULL;
+	scene->tmp_order_table2 = NULL;
 }
 
 void Scene3D_deinit(Scene3D* scene)
 {
 	if (scene->tmp_points != NULL)
 		m3d_free(scene->tmp_points);
-	if (scene->tmp_faces != NULL)
-		m3d_free(scene->tmp_faces);
-	if (scene->tmp_order_table != NULL)
-		m3d_free(scene->tmp_order_table);
+	if (scene->tmp_face_normals != NULL)
+		m3d_free(scene->tmp_face_normals);
+	if (scene->tmp_order_table1 != NULL)
+		m3d_free(scene->tmp_order_table1);
+	if (scene->tmp_order_table2 != NULL)
+		m3d_free(scene->tmp_order_table2);
 }
 
 void
@@ -154,7 +136,7 @@ static Pattern patterns[] =
 	{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
 };
 
-static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, const float3 *p1, const float3 *p2, const float3 *p3, const FaceInstance* face, RenderStyle style, float colorBias)
+static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, const float3 *p1, const float3 *p2, const float3 *p3, const float3* normal, RenderStyle style, float colorBias)
 {
 	// If any vertex is behind the camera, skip it
 	if (p1->z <= 0 || p2->z <= 0 || p3->z <= 0)
@@ -196,9 +178,9 @@ static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, 
 		else
 		{
 			if (inverted)
-				v = (1.0f + v3_dot(face->normal, scene->light)) / 2;
+				v = (1.0f + v3_dot(*normal, scene->light)) / 2;
 			else
-				v = (1.0f - v3_dot(face->normal, scene->light)) / 2;
+				v = (1.0f - v3_dot(*normal, scene->light)) / 2;
 
 			if (c > 0)
 				v = c + (1 - c) * v; // map [0,1] to [c,1]
@@ -228,7 +210,12 @@ static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, 
 		drawLine(bitmap, rowstride, p2, p3, 1, color);
 		drawLine(bitmap, rowstride, p3, p1, 1, color);
 	}
+}
 
+static inline uint32_t float_flip(uint32_t f)
+{
+	uint32_t mask = -((int32_t)(f >> 31)) | 0x80000000;
+	return f ^ mask;
 }
 
 void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const xform* matrix, RenderStyle style, float colorBias)
@@ -240,8 +227,9 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 	}
 	if (scene->tmp_faces_cap < shape->nFaces) {
 		scene->tmp_faces_cap = shape->nFaces;
-		scene->tmp_faces = m3d_realloc(scene->tmp_faces, scene->tmp_faces_cap * sizeof(scene->tmp_faces[0]));
-		scene->tmp_order_table = m3d_realloc(scene->tmp_order_table, scene->tmp_faces_cap * sizeof(scene->tmp_order_table[0]));
+		scene->tmp_face_normals = m3d_realloc(scene->tmp_face_normals, scene->tmp_faces_cap * sizeof(scene->tmp_face_normals[0]));
+		scene->tmp_order_table1 = m3d_realloc(scene->tmp_order_table1, scene->tmp_faces_cap * sizeof(scene->tmp_order_table1[0]));
+		scene->tmp_order_table2 = m3d_realloc(scene->tmp_order_table2, scene->tmp_faces_cap * sizeof(scene->tmp_order_table2[0]));
 	}
 
 	// transform points
@@ -255,12 +243,14 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 		uint16_t idx0 = ibPtr[0];
 		uint16_t idx1 = ibPtr[1];
 		uint16_t idx2 = ibPtr[2];
-		FaceInstance* face = &scene->tmp_faces[i];
-		scene->tmp_order_table[i] = i;
-		face->normal = v3_tri_normal(&scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2]);
+		scene->tmp_order_table1[i] = i;
+		scene->tmp_face_normals[i] = v3_tri_normal(&scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2]);
 
-		float z = scene->tmp_points[idx0].z + scene->tmp_points[idx1].z + scene->tmp_points[idx2].z;
-		face->midz = z;
+		float z = -(scene->tmp_points[idx0].z + scene->tmp_points[idx1].z + scene->tmp_points[idx2].z);
+		uint32_t zbits = float_flip(*(const uint32_t*)&z);
+		// put face index into lowest 8 bits
+		zbits = (zbits & 0xFFFFFF00) | i;
+		scene->tmp_order_table1[i] = zbits;
 	}
 
 	// project points to screen
@@ -275,16 +265,16 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 	}
 
 	// sort faces by z
-	s_facesort_instance = scene;
-	qsort(scene->tmp_order_table, shape->nFaces, sizeof(scene->tmp_order_table[0]), compareFaceZ);
+	int sortResIndex = radix8sort_u32(scene->tmp_order_table1, scene->tmp_order_table2, shape->nFaces);
+	const uint32_t* sortedOrder = sortResIndex == 1 ? scene->tmp_order_table1 : scene->tmp_order_table2;
 
 	// draw faces
 	for (int i = 0; i < shape->nFaces; ++i)
 	{
-		uint16_t fi = scene->tmp_order_table[i];
+		uint16_t fi = sortedOrder[i] & 0xFF;
 		uint16_t idx0 = shape->faces[fi * 3 + 0];
 		uint16_t idx1 = shape->faces[fi * 3 + 1];
 		uint16_t idx2 = shape->faces[fi * 3 + 2];
-		drawShapeFace(scene, buffer, rowstride, &scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2], &scene->tmp_faces[fi], style, colorBias); //@TODO: face bias
+		drawShapeFace(scene, buffer, rowstride, &scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2], &scene->tmp_face_normals[fi], style, colorBias); //@TODO: face bias
 	}
 }

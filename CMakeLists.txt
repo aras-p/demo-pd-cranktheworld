@@ -21,7 +21,7 @@ if (NOT EXISTS ${SDK})
 	return()
 endif()
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 
 # Game Name Customization
@@ -42,6 +42,8 @@ set (DEMO_SOURCES
 	src/mini3d/scene.h
 	src/mini3d/shape.c
 	src/mini3d/shape.h
+	src/external/bitshifter_radixsort/radixsort.c
+	src/external/bitshifter_radixsort/radixsort.h
 )
 
 if (TOOLCHAIN STREQUAL "armgcc")

@@ -31,11 +31,8 @@
 extern "C" {
 #endif
 
-extern uint32_t radix8sort_u32(uint32_t* restrict keys_in_out, uint32_t* restrict keys_temp,
-    uint32_t* restrict values_in_out, uint32_t* values_temp, uint32_t size);
-
-extern uint32_t radix8sort_f32(float* restrict keys_in_out, float* restrict keys_temp,
-    uint32_t* restrict values_in_out, uint32_t* restrict values_temp, uint32_t size);
+/* Note: ignores lowest 8 bits of the keys! */
+extern uint32_t radix8sort_u32(uint32_t* restrict keys_in_out, uint32_t* restrict keys_temp, uint32_t size);
 
 #ifdef __cplusplus
 }

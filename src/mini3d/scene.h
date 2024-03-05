@@ -25,8 +25,9 @@ typedef struct
 	int tmp_points_cap;
 	int tmp_faces_cap;
 	float3* tmp_points;
-	struct FaceInstance* tmp_faces;
-	uint16_t* tmp_order_table;
+	float3* tmp_face_normals;
+	uint32_t* tmp_order_table1;
+	uint32_t* tmp_order_table2;
 } Scene3D;
 
 void Scene3D_init(Scene3D* scene);
