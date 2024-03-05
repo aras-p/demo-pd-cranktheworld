@@ -29,9 +29,6 @@ Scene3DNode_init(Scene3DNode* node)
 	node->renderStyle = kRenderInheritStyle;
 	node->isVisible = 1;
 	node->needsUpdate = 1;
-#if ENABLE_Z_BUFFER
-	node->useZBuffer = 1;
-#endif
 }
 
 void
@@ -42,9 +39,9 @@ Scene3DNode_deinit(Scene3DNode* node)
 	while ( shape != NULL )
 	{
 		ShapeInstance* next = shape->next;
-		Shape3D_release(shape->prototype);
 		m3d_free(shape->points);
 		m3d_free(shape->faces);
+		m3d_free(shape->orderTable);
 		m3d_free(shape);
 		shape = next;
 	}
@@ -122,14 +119,6 @@ Scene3DNode_setVisible(Scene3DNode* node, int visible)
 	node->needsUpdate = 1;
 }
 
-#if ENABLE_Z_BUFFER
-void Scene3DNode_setUsesZBuffer(Scene3DNode* node, int flag)
-{
-	node->useZBuffer = flag;
-	node->needsUpdate = 1;
-}
-#endif
-
 void
 Scene3DNode_addShapeWithTransform(Scene3DNode* node, Shape3D* shape, Matrix3D transform)
 {
@@ -137,7 +126,7 @@ Scene3DNode_addShapeWithTransform(Scene3DNode* node, Shape3D* shape, Matrix3D tr
 	int i;
 
 	nodeshape->renderStyle = kRenderInheritStyle;
-	nodeshape->prototype = Shape3D_retain(shape);
+	nodeshape->prototype = shape;
 	nodeshape->nPoints = shape->nPoints;
 	nodeshape->points = m3d_malloc(sizeof(Point3D) * shape->nPoints);
 
@@ -153,16 +142,11 @@ Scene3DNode_addShapeWithTransform(Scene3DNode* node, Shape3D* shape, Matrix3D tr
 		// point face vertices at copy's points array
 		FaceInstance* face = &nodeshape->faces[i];
 
-		face->p1 = &nodeshape->points[shape->faces[i].p1];
-		face->p2 = &nodeshape->points[shape->faces[i].p2];
-		face->p3 = &nodeshape->points[shape->faces[i].p3];
+		face->p1 = &nodeshape->points[shape->faces[i*3+0] - 1];
+		face->p2 = &nodeshape->points[shape->faces[i*3+1] - 1];
+		face->p3 = &nodeshape->points[shape->faces[i*3+2] - 1];
 
-		if ( shape->faces[i].p4 != 0xffff )
-			face->p4 = &nodeshape->points[shape->faces[i].p4];
-		else
-			face->p4 = NULL;
-
-		face->colorBias = shape->faces[i].colorBias;
+		face->colorBias = shape->faceColorBias ? shape->faceColorBias[i] : 0.0f;
 
 		// also not necessary
 		face->normal = pnormal(face->p1, face->p2, face->p3);
@@ -172,10 +156,7 @@ Scene3DNode_addShapeWithTransform(Scene3DNode* node, Shape3D* shape, Matrix3D tr
 	nodeshape->center = Matrix3D_apply(transform, shape->center);
 	nodeshape->colorBias = 0;
 
-#if ENABLE_ORDERING_TABLE
-	nodeshape->orderTableSize = 0;
-	nodeshape->orderTable = NULL;
-#endif
+	nodeshape->orderTable = m3d_malloc(sizeof(uint16_t) * shape->nFaces);
 
 	nodeshape->next = node->shapes;
 	node->shapes = nodeshape;
@@ -208,6 +189,20 @@ Scene3DNode_newChild(Scene3DNode* node)
 	return child;
 }
 
+static ShapeInstance* s_facesort_instance;
+static int compareFaceZ(const void* a, const void* b)
+{
+	uint16_t idxa = *(const uint16_t*)a;
+	uint16_t idxb = *(const uint16_t*)b;
+	float za = s_facesort_instance->faces[idxa].midz;
+	float zb = s_facesort_instance->faces[idxb].midz;
+	if (za < zb)
+		return +1;
+	if (za > zb)
+		return -1;
+	return 0;
+}
+
 static void
 Scene3D_updateShapeInstance(Scene3D* scene, ShapeInstance* shape, Matrix3D xform, float colorBias, RenderStyle style)
 {
@@ -224,36 +219,15 @@ Scene3D_updateShapeInstance(Scene3D* scene, ShapeInstance* shape, Matrix3D xform
 	shape->renderStyle = style;
 	shape->inverted = xform.inverting;
 
-#if ENABLE_ORDERING_TABLE
-	float zmin = 1e23f;
-	float zmax = 0;
-	int ordersize = shape->prototype->orderTableSize;
-
-	if ( ordersize != shape->orderTableSize )
-	{
-		shape->orderTableSize = ordersize;
-		shape->orderTable = m3d_realloc(shape->orderTable, ordersize * sizeof(FaceInstance*));
-	}
-
-	memset(shape->orderTable, 0, ordersize * sizeof(FaceInstance*));
-#endif
-
 	// recompute face normals
-
 	for ( i = 0; i < shape->nFaces; ++i )
 	{
 		FaceInstance* face = &shape->faces[i];
+		shape->orderTable[i] = i;
 		face->normal = pnormal(face->p1, face->p2, face->p3);
 
-#if ENABLE_ORDERING_TABLE
-		if ( ordersize > 0 )
-		{
-			float z = face->p1->z + face->p2->z + face->p3->z;
-
-			if ( z < zmin ) zmin = z;
-			if ( z > zmax ) zmax = z;
-		}
-#endif
+		float z = face->p1->z + face->p2->z + face->p3->z;
+		face->midz = z;
 	}
 
 	// apply perspective, scale to display
@@ -264,41 +238,14 @@ Scene3D_updateShapeInstance(Scene3D* scene, ShapeInstance* shape, Matrix3D xform
 
 		if ( p->z > 0 )
 		{
-			if ( scene->hasPerspective )
-			{
-				p->x = scene->scale * (p->x / p->z + 1.6666666f * scene->centerx);
-				p->y = scene->scale * (p->y / p->z + scene->centery);
-			}
-			else
-			{
-				p->x = scene->scale * (p->x + 1.6666666f * scene->centerx);
-				p->y = scene->scale * (p->y + scene->centery);
-			}
-		}
-
-#if ENABLE_Z_BUFFER
-		if ( p->z < scene->zmin )
-			scene->zmin = p->z;
-#endif
-	}
-
-#if ENABLE_ORDERING_TABLE
-	// Put faces in bins separated by average z value
-
-	if ( ordersize > 0 )
-	{
-		float d = zmax - zmin + 0.0001f;
-
-		for ( i = 0; i < shape->nFaces; ++i )
-		{
-			FaceInstance* face = &shape->faces[i];
-
-			int idx = ordersize * (face->p1->z + face->p2->z + face->p3->z - zmin) / d;
-			face->next = shape->orderTable[idx];
-			shape->orderTable[idx] = face;
+			p->x = scene->scale * (p->x / p->z + 1.6666666f * scene->centerx);
+			p->y = scene->scale * (p->y / p->z + scene->centery);
 		}
 	}
-#endif
+
+	// Sort faces by z
+	s_facesort_instance = shape;
+	qsort(shape->orderTable, shape->nFaces, sizeof(shape->orderTable[0]), compareFaceZ);
 }
 
 void
@@ -326,9 +273,6 @@ Scene3D_updateNode(Scene3D* scene, Scene3DNode* node, Matrix3D xform, float colo
 		while ( shape != NULL )
 		{
 			Scene3D_updateShapeInstance(scene, shape, xform, colorBias, style);
-#if ENABLE_Z_BUFFER
-			shape->useZBuffer = node->useZBuffer;
-#endif
 			shape = shape->next;
 		}
 
@@ -343,8 +287,6 @@ Scene3D_updateNode(Scene3D* scene, Scene3DNode* node, Matrix3D xform, float colo
 void
 Scene3D_init(Scene3D* scene)
 {
-	scene->hasPerspective = 1;
-
 	Scene3D_setCamera(scene, (Point3D){ 0, 0, 0 }, (Point3D){ 0, 0, 1 }, 1.0, (Vector3D){ 0, 1, 0 });
 	Scene3D_setGlobalLight(scene, (Vector3D){ 0, -1, 0 });
 
@@ -513,7 +455,6 @@ static inline void
 drawShapeFace(Scene3D* scene, ShapeInstance* shape, uint8_t* bitmap, int rowstride, FaceInstance* face)
 {
 	// If any vertex is behind the camera, skip it
-
 	if ( face->p1->z <= 0 || face->p2->z <= 0 || face->p3->z <= 0 )
 		return;
 
@@ -525,183 +466,75 @@ drawShapeFace(Scene3D* scene, ShapeInstance* shape, uint8_t* bitmap, int rowstri
 	float y3 = face->p3->y;
 
 	// quick bounds check
-
-	if ( (x1 < 0 && x2 < 0 && x3 < 0 && (face->p4 == NULL || face->p4->x < 0)) ||
-		 (x1 >= WIDTH && x2 >= WIDTH && x3 >= WIDTH && (face->p4 == NULL || face->p4->x >= WIDTH)) ||
-		 (y1 < 0 && y2 < 0 && y3 < 0 && (face->p4 == NULL || face->p4->y < 0)) ||
-		 (y1 >= HEIGHT && y2 >= HEIGHT && y3 >= HEIGHT && (face->p4 == NULL || face->p4->y >= HEIGHT)) )
+	if ( (x1 < 0 && x2 < 0 && x3 < 0) ||
+		 (x1 >= WIDTH && x2 >= WIDTH && x3 >= WIDTH) ||
+		 (y1 < 0 && y2 < 0 && y3 < 0) ||
+		 (y1 >= HEIGHT && y2 >= HEIGHT && y3 >= HEIGHT) )
 		return;
 
-	if ( shape->prototype->isClosed )
-	{
-		// only render front side of faces
+	// only render front side of faces via winding order
+	float d = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+	if ( (d >= 0) ^ (shape->inverted ? 1 : 0) )
+		return;
 
-		float d;
-
-		if ( scene->hasPerspective ) // use winding order
-			d = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
-		else // use direction of normal
-			d = face->normal.dz;
-
-		if ( (d >= 0) ^ (shape->inverted ? 1 : 0) )
-			return;
-	}
-
-	// lighting
-
-	float c = face->colorBias + shape->colorBias;
-	float v;
-
-	if ( c <= -1 )
-		v = 0;
-	else if ( c >= 1 )
-		v = 1;
-	else
-	{
-		if ( shape->inverted )
-			v = (1.0f + Vector3DDot(face->normal, scene->light)) / 2;
-		else
-			v = (1.0f - Vector3DDot(face->normal, scene->light)) / 2;
-
-		if ( c > 0 )
-			v = c + (1-c) * v; // map [0,1] to [c,1]
-		else if ( c < 0 )
-			v *= 1 + c; // map [0,1] to [0, 1+c]
-	}
-
-	// cheap gamma adjust
-	// v = v * v;
-
-	int vi = (int)(32.99f * v);
-
-	if ( vi > 32 )
-		vi = 32;
-	else if ( vi < 0 )
-		vi = 0;
-
-	uint8_t* pattern = (uint8_t*)&patterns[vi];
-
-	if ( face->p4 != NULL )
-	{
-#if ENABLE_Z_BUFFER
-		if ( shape->useZBuffer )
-			fillQuad_zbuf(bitmap, rowstride, face->p1, face->p2, face->p3, face->p4, pattern);
-		else
-#endif
-			fillQuad(bitmap, rowstride, face->p1, face->p2, face->p3, face->p4, pattern);
-	}
-	else
-	{
-#if ENABLE_Z_BUFFER
-		if ( shape->useZBuffer )
-			fillTriangle_zbuf(bitmap, rowstride, face->p1, face->p2, face->p3, pattern);
-		else
-#endif
-			fillTriangle(bitmap, rowstride, face->p1, face->p2, face->p3, pattern);
-	}
-}
-static inline void
-drawFilledShape(Scene3D* scene, ShapeInstance* shape, uint8_t* bitmap, int rowstride)
-{
-#if ENABLE_ORDERING_TABLE
-	if ( shape->orderTableSize > 0 )
-	{
-		for ( int i = shape->orderTableSize - 1; i >= 0; --i )
-		{
-			FaceInstance* face = shape->orderTable[i];
-
-			while ( face != NULL )
-			{
-				drawShapeFace(scene, shape, bitmap, rowstride, face);
-				face = face->next;
-			}
-		}
-	}
-	else
-#endif
-	for ( int f = 0; f < shape->nFaces; ++f )
-		drawShapeFace(scene, shape, bitmap, rowstride, &shape->faces[f]);
-}
-
-static inline void
-drawWireframe(Scene3D* scene, ShapeInstance* shape, uint8_t* bitmap, int rowstride)
-{
-	int f;
 	RenderStyle style = shape->renderStyle;
-	uint8_t* color = patterns[32];
 
-	for ( f = 0; f < shape->nFaces; ++f )
+	// fill
+	if (style & kRenderFilled)
 	{
-		FaceInstance* face = &shape->faces[f];
+		// lighting
 
-		// If any vertex is behind the camera, skip it
+		float c = face->colorBias + shape->colorBias;
+		float v;
 
-		if ( face->p1->z <= 0 || face->p2->z <= 0 || face->p3->z <= 0 || (face->p4 != NULL && face->p4->x <= 0) )
-			continue;
-
-		float x1 = face->p1->x;
-		float y1 = face->p1->y;
-		float x2 = face->p2->x;
-		float y2 = face->p2->y;
-		float x3 = face->p3->x;
-		float y3 = face->p3->y;
-		float x4 = (face->p4 != NULL) ? face->p4->x : 0;
-		float y4 = (face->p4 != NULL) ? face->p4->y : 0;
-
-		// quick bounds check
-
-		if ( (x1 < 0 && x2 < 0 && x3 < 0 && x4 < 0) || (x1 >= WIDTH && x2 >= WIDTH && x3 >= WIDTH && x4 >= WIDTH) ||
-			 (y1 < 0 && y2 < 0 && y3 < 0 && x4 < 0) || (y1 >= HEIGHT && y2 >= HEIGHT && y3 >= HEIGHT && y4 >= HEIGHT) )
-			continue;
-
-		if ( (style & kRenderWireframeBack) == 0 )
-		{
-			// only render front side of faces
-
-			float d;
-
-			if ( scene->hasPerspective ) // use winding order
-				d = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
-			else // use direction of normal
-				d = face->normal.dz;
-
-			if ( (d > 0) ^ (shape->inverted ? 1 : 0) )
-				continue;
-		}
-
-		// XXX - can avoid 1/2 the drawing if we're doing the entire shape (kRenderWireframeBack is set)
-		// and the shape is closed: skip lines where y1 > y2
-
-#if ENABLE_Z_BUFFER
-		if ( shape->useZBuffer )
-		{
-			drawLine_zbuf(bitmap, rowstride, face->p1, face->p2, 1, color);
-			drawLine_zbuf(bitmap, rowstride, face->p2, face->p3, 1, color);
-
-			if ( face->p4 != NULL )
-			{
-				drawLine_zbuf(bitmap, rowstride, face->p3, face->p4, 1, color);
-				drawLine_zbuf(bitmap, rowstride, face->p4, face->p1, 1, color);
-			}
-			else
-				drawLine_zbuf(bitmap, rowstride, face->p3, face->p1, 1, color);
-		}
+		if (c <= -1)
+			v = 0;
+		else if (c >= 1)
+			v = 1;
 		else
 		{
-#endif
-			drawLine(bitmap, rowstride, face->p1, face->p2, 1, color);
-			drawLine(bitmap, rowstride, face->p2, face->p3, 1, color);
-
-			if ( face->p4 != NULL )
-			{
-				drawLine(bitmap, rowstride, face->p3, face->p4, 1, color);
-				drawLine(bitmap, rowstride, face->p4, face->p1, 1, color);
-			}
+			if (shape->inverted)
+				v = (1.0f + Vector3DDot(face->normal, scene->light)) / 2;
 			else
-				drawLine(bitmap, rowstride, face->p3, face->p1, 1, color);
-#if ENABLE_Z_BUFFER
+				v = (1.0f - Vector3DDot(face->normal, scene->light)) / 2;
+
+			if (c > 0)
+				v = c + (1 - c) * v; // map [0,1] to [c,1]
+			else if (c < 0)
+				v *= 1 + c; // map [0,1] to [0, 1+c]
 		}
-#endif
+
+		// cheap gamma adjust
+		// v = v * v;
+
+		int vi = (int)(32.99f * v);
+
+		if (vi > 32)
+			vi = 32;
+		else if (vi < 0)
+			vi = 0;
+
+		uint8_t* pattern = (uint8_t*)&patterns[vi];
+		fillTriangle(bitmap, rowstride, face->p1, face->p2, face->p3, pattern);
+	}
+
+	// edges
+	if (style & kRenderWireframe)
+	{
+		const uint8_t* color = patterns[0]; // 32: white, 0: black
+		drawLine(bitmap, rowstride, face->p1, face->p2, 1, color);
+		drawLine(bitmap, rowstride, face->p2, face->p3, 1, color);
+		drawLine(bitmap, rowstride, face->p3, face->p1, 1, color);
+	}
+
+}
+
+static void drawShape(Scene3D* scene, ShapeInstance* shape, uint8_t* bitmap, int rowstride)
+{
+	for (int f = 0; f < shape->nFaces; ++f)
+	{
+		uint16_t fi = shape->orderTable[f];
+		drawShapeFace(scene, shape, bitmap, rowstride, &shape->faces[fi]);
 	}
 }
 
@@ -730,28 +563,13 @@ Scene3D_drawNode(Scene3D* scene, Scene3DNode* node, uint8_t* bitmap, int rowstri
 	for ( i = 0; i < count; ++i )
 	{
 		ShapeInstance* shape = scene->shapelist[i];
-		RenderStyle style = shape->renderStyle;
-
-		if ( style & kRenderFilled )
-			drawFilledShape(scene, shape, bitmap, rowstride);
-
-		if ( style & kRenderWireframe )
-			drawWireframe(scene, shape, bitmap, rowstride);
+		drawShape(scene, shape, bitmap, rowstride);
 	}
 }
 
 void
 Scene3D_draw(Scene3D* scene, uint8_t* bitmap, int rowstride)
 {
-#if ENABLE_Z_BUFFER
-	scene->zmin = 1e23f;
-#endif
-
 	Scene3D_updateNode(scene, &scene->root, scene->camera, 0, kRenderFilled, 0);
-
-#if ENABLE_Z_BUFFER
-	resetZBuffer(scene->zmin);
-#endif
-
 	Scene3D_drawNode(scene, &scene->root, bitmap, rowstride);
 }

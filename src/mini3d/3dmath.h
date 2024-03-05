@@ -6,8 +6,7 @@
 //  Copyright (c) 2015 Panic, Inc. All rights reserved.
 //
 
-#ifndef __Playdate_Simulator__pd3d__
-#define __Playdate_Simulator__pd3d__
+#pragma once
 
 #include <stdio.h>
 #include <stdint.h>
@@ -99,5 +98,3 @@ Matrix3D Matrix3D_multiply(Matrix3D l, Matrix3D r);
 Point3D Matrix3D_apply(Matrix3D m, Point3D p);
 
 float Matrix3D_getDeterminant(Matrix3D* m);
-
-#endif
