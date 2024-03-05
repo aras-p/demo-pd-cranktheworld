@@ -94,6 +94,7 @@ extern Matrix3D identityMatrix;
 
 Matrix3D Matrix3DMake(float m11, float m12, float m13, float m21, float m22, float m23, float m31, float m32, float m33, int inverting);
 Matrix3D Matrix3DMakeTranslate(float dx, float dy, float dz);
+Matrix3D Matrix3DMakeRotation(float angle, Vector3D axis);
 Matrix3D Matrix3D_multiply(Matrix3D l, Matrix3D r);
 Point3D Matrix3D_apply(Matrix3D m, Point3D p);
 

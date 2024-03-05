@@ -144,17 +144,18 @@ static Matrix3D planeXforms[MAX_PLANES];
 static float planeDistances[MAX_PLANES];
 static int planeOrder[MAX_PLANES];
 
+
 static void checkCrank(PlaydateAPI *pd)
 {
 	PDButtons btCur, btPushed, btRel;
 	pd->system->getButtonState(&btCur, &btPushed, &btRel);
-	if (btPushed & kButtonLeft)
+	if (btCur & kButtonLeft)
 	{
 		planeCount -= 1;
 		if (planeCount < 1)
 			planeCount = 1;
 	}
-	if (btPushed & kButtonRight)
+	if (btCur & kButtonRight)
 	{
 		planeCount += 1;
 		if (planeCount > MAX_PLANES)
@@ -207,10 +208,22 @@ static int update(void* userdata)
 		float px = ((XorShift32(&rng) & 63) - 31.5f);
 		float py = ((XorShift32(&rng) & 15) - 7.5f);
 		float pz = ((XorShift32(&rng) & 63) - 31.5f);
+		float rot = (XorShift32(&rng) % 360);
+		float rx = ((XorShift32(&rng) & 63) - 31.5f);
+		float ry = 60;
+		float rz = ((XorShift32(&rng) & 63) - 31.5f);
 		if (i == 0) {
 			px = py = pz = 0.0f;
+			rot = 0;
+			rx = 0;
+			ry = 1;
+			rz = 0;
 		}
-		planeXforms[i] = Matrix3DMakeTranslate(px, py, pz);
+		planeXforms[i] = Matrix3DMakeRotation(rot, Vector3DMake(rx,ry,rz));
+		planeXforms[i].dx = px;
+		planeXforms[i].dy = py;
+		planeXforms[i].dz = pz;
+		//planeXforms[i] = Matrix3DMakeTranslate(px, py, pz);
 		Point3D center = Matrix3D_apply(s_scene.camera, Matrix3D_apply(planeXforms[i], s_shape_plane.center));
 		planeDistances[i] = center.z;
 		planeOrder[i] = i;
@@ -224,7 +237,7 @@ static int update(void* userdata)
 		Scene3D_drawShape(&s_scene, pd->graphics->getFrame(), LCD_ROWSIZE, &s_shape_plane, &planeXforms[idx], kRenderFilled | kRenderWireframe, 0.0f);
 	}
 
-	pd->graphics->fillRect(0, 0, 100, 48, kColorWhite);
+	pd->graphics->fillRect(0, 0, 30, 32, kColorWhite);
 
 	char buf[100];
 	buf[0] = planeCount / 100 % 10 + '0';
@@ -232,7 +245,7 @@ static int update(void* userdata)
 	buf[2] = planeCount / 1 % 10 + '0';
 	buf[3] = 0;
 	pd->graphics->setFont(font);
-	pd->graphics->drawText(buf, strlen(buf), kASCIIEncoding, 0, 20);
+	pd->graphics->drawText(buf, strlen(buf), kASCIIEncoding, 0, 16);
 
 	x += dx;
 	y += dy;

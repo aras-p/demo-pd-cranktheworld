@@ -21,6 +21,43 @@ Matrix3D Matrix3DMakeTranslate(float dx, float dy, float dz)
 	return (Matrix3D){ .isIdentity = 1, .inverting = 0, .m = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, .dx = dx, .dy = dy, .dz = dz };
 }
 
+
+Matrix3D Matrix3DMakeRotation(float angle, Vector3D axis)
+{
+	Matrix3D p;
+
+#undef M_PI
+#define M_PI 3.14159265358979323846f
+
+	float c = cosf(angle * M_PI / 180);
+	float s = sinf(angle * M_PI / 180);
+	float x = axis.dx;
+	float y = axis.dy;
+	float z = axis.dz;
+
+	float d = sqrtf(x * x + y * y + z * z);
+
+	x /= d;
+	y /= d;
+	z /= d;
+
+	p.isIdentity = 0;
+	p.inverting = 0;
+
+	p.m[0][0] = c + x * x * (1 - c);
+	p.m[0][1] = x * y * (1 - c) - z * s;
+	p.m[0][2] = x * z * (1 - c) + y * s;
+	p.m[1][0] = y * x * (1 - c) + z * s;
+	p.m[1][1] = c + y * y * (1 - c);
+	p.m[1][2] = y * z * (1 - c) - x * s;
+	p.m[2][0] = z * x * (1 - c) - y * s;
+	p.m[2][1] = z * y * (1 - c) + x * s;
+	p.m[2][2] = c + z * z * (1 - c);
+	p.dx = p.dy = p.dz = 0;
+	return p;
+}
+
+
 Matrix3D Matrix3D_multiply(Matrix3D l, Matrix3D r)
 {
 	Matrix3D m = { .isIdentity = 0, .inverting = l.inverting ^ r.inverting };
