@@ -70,13 +70,12 @@ void
 Scene3D_setCamera(Scene3D* scene, Point3D origin, Point3D lookAt, float scale, Vector3D up)
 {
 	Matrix3D camera = identityMatrix;
-	camera.isIdentity = 0;
 
 	camera.dx = -origin.x;
 	camera.dy = -origin.y;
 	camera.dz = -origin.z;
 
-	Vector3D dir = Vector3DMake(lookAt.x - origin.x, lookAt.y - origin.y, lookAt.z - origin.z);
+	Vector3D dir = (Vector3D){ lookAt.x - origin.x, lookAt.y - origin.y, lookAt.z - origin.z };
 	
 	float l = sqrtf(Vector3D_lengthSquared(&dir));
 	
@@ -94,13 +93,13 @@ Scene3D_setCamera(Scene3D* scene, Point3D origin, Point3D lookAt, float scale, V
 	{
 		h = sqrtf(dir.dx * dir.dx + dir.dz * dir.dz);
 		
-		Matrix3D yaw = Matrix3DMake(dir.dz/h, 0, -dir.dx/h, 0, 1, 0, dir.dx/h, 0, dir.dz/h, 0);
+		Matrix3D yaw = Matrix3DMake(dir.dz/h, 0, -dir.dx/h, 0, 1, 0, dir.dx/h, 0, dir.dz/h);
 		camera = Matrix3D_multiply(camera, yaw);
 	}
 
 	// then pitch up/down to y elevation
 
-	Matrix3D pitch = Matrix3DMake(1, 0, 0, 0, h, -dir.dy, 0, dir.dy, h, 0);
+	Matrix3D pitch = Matrix3DMake(1, 0, 0, 0, h, -dir.dy, 0, dir.dy, h);
 	camera = Matrix3D_multiply(camera, pitch);
 
 	// and roll to position the up vector
@@ -108,7 +107,7 @@ Scene3D_setCamera(Scene3D* scene, Point3D origin, Point3D lookAt, float scale, V
 	if ( up.dx != 0 || up.dy != 0 )
 	{
 		l = sqrtf(up.dx * up.dx + up.dy * up.dy);
-		Matrix3D roll = Matrix3DMake(up.dy/l, up.dx/l, 0, -up.dx/l, up.dy/l, 0, 0, 0, 1, 0);
+		Matrix3D roll = Matrix3DMake(up.dy/l, up.dx/l, 0, -up.dx/l, up.dy/l, 0, 0, 0, 1);
 	
 		scene->camera = Matrix3D_multiply(camera, roll);
 	}
@@ -247,7 +246,7 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 
 	// transform points
 	for (int i = 0; i < shape->nPoints; ++i)
-		scene->tmp_points[i] = Matrix3D_apply(scene->camera, Matrix3D_apply(*matrix, shape->points[i]));
+		scene->tmp_points[i] = Matrix3D_apply(&scene->camera, Matrix3D_apply(matrix, shape->points[i]));
 
 	// compute face normals and midpoints
 	const uint16_t* ibPtr = shape->faces;
