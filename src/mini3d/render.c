@@ -113,11 +113,11 @@ static inline int32_t slope(float x1, float y1, float x2, float y2)
 		return (int32_t)(dx / dy * (1<<16));
 }
 
-void drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, int thick, const uint8_t pattern[8])
+void drawLine(uint8_t* bitmap, int rowstride, const float3* p1, const float3* p2, int thick, const uint8_t pattern[8])
 {
 	if ( p1->y > p2->y )
 	{
-		const Point3D* tmp = p1;
+		const float3* tmp = p1;
 		p1 = p2;
 		p2 = tmp;
 	}
@@ -197,7 +197,7 @@ static void fillRange(uint8_t* bitmap, int rowstride, int y, int endy, int32_t* 
 	*x2p = x2;
 }
 
-static inline void sortTri(const Point3D** p1, const Point3D** p2, const Point3D** p3)
+static inline void sortTri(const float3** p1, const float3** p2, const float3** p3)
 {
 	float y1 = (*p1)->y, y2 = (*p2)->y, y3 = (*p3)->y;
 	
@@ -205,14 +205,14 @@ static inline void sortTri(const Point3D** p1, const Point3D** p2, const Point3D
 	{
 		if ( y3 < y2 ) // 1,3,2
 		{
-			const Point3D* tmp = *p2;
+			const float3* tmp = *p2;
 			*p2 = *p3;
 			*p3 = tmp;
 		}
 	}
 	else if ( y2 < y1 && y2 < y3 )
 	{
-		const Point3D* tmp = *p1;
+		const float3* tmp = *p1;
 		*p1 = *p2;
 
 		if ( y3 < y1 ) // 2,3,1
@@ -225,7 +225,7 @@ static inline void sortTri(const Point3D** p1, const Point3D** p2, const Point3D
 	}
 	else
 	{
-		const Point3D* tmp = *p1;
+		const float3* tmp = *p1;
 		*p1 = *p3;
 		
 		if ( y1 < y2 ) // 3,1,2
@@ -239,7 +239,7 @@ static inline void sortTri(const Point3D** p1, const Point3D** p2, const Point3D
 
 }
 
-void fillTriangle(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, const Point3D* p3, const uint8_t pattern[8])
+void fillTriangle(uint8_t* bitmap, int rowstride, const float3* p1, const float3* p2, const float3* p3, const uint8_t pattern[8])
 {
 	// sort by y coord
 	

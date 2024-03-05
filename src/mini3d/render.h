@@ -12,5 +12,5 @@
 #include "../mathlib.h"
 #include "mini3d.h"
 
-void drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, int thick, const uint8_t pattern[8]);
-void fillTriangle(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, const Point3D* p3, const uint8_t pattern[8]);
+void drawLine(uint8_t* bitmap, int rowstride, const float3* p1, const float3* p2, int thick, const uint8_t pattern[8]);
+void fillTriangle(uint8_t* bitmap, int rowstride, const float3* p1, const float3* p2, const float3* p3, const uint8_t pattern[8]);

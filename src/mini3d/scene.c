@@ -11,7 +11,7 @@
 
 struct FaceInstance
 {
-	Vector3D normal;
+	float3 normal;
 	float midz;
 };
 typedef struct FaceInstance FaceInstance;
@@ -32,8 +32,8 @@ static int compareFaceZ(const void* a, const void* b)
 
 void Scene3D_init(Scene3D* scene)
 {
-	Scene3D_setCamera(scene, (Point3D){ 0, 0, 0 }, (Point3D){ 0, 0, 1 }, 1.0, (Vector3D){ 0, 1, 0 });
-	Scene3D_setGlobalLight(scene, (Vector3D){ 0, -1, 0 });
+	Scene3D_setCamera(scene, (float3){ 0, 0, 0 }, (float3){ 0, 0, 1 }, 1.0, (float3){ 0, 1, 0 });
+	Scene3D_setGlobalLight(scene, (float3){ 0, -1, 0 });
 
 	Scene3D_setCenter(scene, 0.5, 0.5);
 
@@ -54,7 +54,7 @@ void Scene3D_deinit(Scene3D* scene)
 }
 
 void
-Scene3D_setGlobalLight(Scene3D* scene, Vector3D light)
+Scene3D_setGlobalLight(Scene3D* scene, float3 light)
 {
 	scene->light = light;
 }
@@ -67,21 +67,21 @@ Scene3D_setCenter(Scene3D* scene, float x, float y)
 }
 
 void
-Scene3D_setCamera(Scene3D* scene, Point3D origin, Point3D lookAt, float scale, Vector3D up)
+Scene3D_setCamera(Scene3D* scene, float3 origin, float3 lookAt, float scale, float3 up)
 {
-	Matrix3D camera = identityMatrix;
+	xform camera = mtx_identity;
 
-	camera.dx = -origin.x;
-	camera.dy = -origin.y;
-	camera.dz = -origin.z;
+	camera.x = -origin.x;
+	camera.y = -origin.y;
+	camera.z = -origin.z;
 
-	Vector3D dir = (Vector3D){ lookAt.x - origin.x, lookAt.y - origin.y, lookAt.z - origin.z };
+	float3 dir = (float3){ lookAt.x - origin.x, lookAt.y - origin.y, lookAt.z - origin.z };
 	
-	float l = sqrtf(Vector3D_lengthSquared(&dir));
+	float l = sqrtf(v3_lensq(&dir));
 	
-	dir.dx /= l;
-	dir.dy /= l;
-	dir.dz /= l;
+	dir.x /= l;
+	dir.y /= l;
+	dir.z /= l;
 	
 	scene->scale = 240 * scale;
 
@@ -89,27 +89,27 @@ Scene3D_setCamera(Scene3D* scene, Point3D origin, Point3D lookAt, float scale, V
 
 	float h = 0;
 
-	if ( dir.dx != 0 || dir.dz != 0 )
+	if ( dir.x != 0 || dir.z != 0 )
 	{
-		h = sqrtf(dir.dx * dir.dx + dir.dz * dir.dz);
+		h = sqrtf(dir.x * dir.x + dir.z * dir.z);
 		
-		Matrix3D yaw = Matrix3DMake(dir.dz/h, 0, -dir.dx/h, 0, 1, 0, dir.dx/h, 0, dir.dz/h);
-		camera = Matrix3D_multiply(camera, yaw);
+		xform yaw = mtx_make(dir.z/h, 0, -dir.x/h, 0, 1, 0, dir.x/h, 0, dir.z/h);
+		camera = mtx_multiply(&camera, &yaw);
 	}
 
 	// then pitch up/down to y elevation
 
-	Matrix3D pitch = Matrix3DMake(1, 0, 0, 0, h, -dir.dy, 0, dir.dy, h);
-	camera = Matrix3D_multiply(camera, pitch);
+	xform pitch = mtx_make(1, 0, 0, 0, h, -dir.y, 0, dir.y, h);
+	camera = mtx_multiply(&camera, &pitch);
 
 	// and roll to position the up vector
 
-	if ( up.dx != 0 || up.dy != 0 )
+	if ( up.x != 0 || up.y != 0 )
 	{
-		l = sqrtf(up.dx * up.dx + up.dy * up.dy);
-		Matrix3D roll = Matrix3DMake(up.dy/l, up.dx/l, 0, -up.dx/l, up.dy/l, 0, 0, 0, 1);
+		l = sqrtf(up.x * up.x + up.y * up.y);
+		xform roll = mtx_make(up.y/l, up.x/l, 0, -up.x/l, up.y/l, 0, 0, 0, 1);
 	
-		scene->camera = Matrix3D_multiply(camera, roll);
+		scene->camera = mtx_multiply(&camera, &roll);
 	}
 	else
 		scene->camera = camera;
@@ -154,7 +154,7 @@ static Pattern patterns[] =
 	{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
 };
 
-static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, const Point3D *p1, const Point3D *p2, const Point3D *p3, const FaceInstance* face, RenderStyle style, float colorBias)
+static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, const float3 *p1, const float3 *p2, const float3 *p3, const FaceInstance* face, RenderStyle style, float colorBias)
 {
 	// If any vertex is behind the camera, skip it
 	if (p1->z <= 0 || p2->z <= 0 || p3->z <= 0)
@@ -196,9 +196,9 @@ static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, 
 		else
 		{
 			if (inverted)
-				v = (1.0f + Vector3DDot(face->normal, scene->light)) / 2;
+				v = (1.0f + v3_dot(face->normal, scene->light)) / 2;
 			else
-				v = (1.0f - Vector3DDot(face->normal, scene->light)) / 2;
+				v = (1.0f - v3_dot(face->normal, scene->light)) / 2;
 
 			if (c > 0)
 				v = c + (1 - c) * v; // map [0,1] to [c,1]
@@ -231,7 +231,7 @@ static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, 
 
 }
 
-void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const Matrix3D* matrix, RenderStyle style, float colorBias)
+void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const xform* matrix, RenderStyle style, float colorBias)
 {
 	// temporary buffers
 	if (scene->tmp_points_cap < shape->nPoints) {
@@ -246,7 +246,7 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 
 	// transform points
 	for (int i = 0; i < shape->nPoints; ++i)
-		scene->tmp_points[i] = Matrix3D_apply(&scene->camera, Matrix3D_apply(matrix, shape->points[i]));
+		scene->tmp_points[i] = mtx_transform_pt(&scene->camera, mtx_transform_pt(matrix, shape->points[i]));
 
 	// compute face normals and midpoints
 	const uint16_t* ibPtr = shape->faces;
@@ -257,7 +257,7 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 		uint16_t idx2 = ibPtr[2] - 1;
 		FaceInstance* face = &scene->tmp_faces[i];
 		scene->tmp_order_table[i] = i;
-		face->normal = pnormal(&scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2]);
+		face->normal = v3_tri_normal(&scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2]);
 
 		float z = scene->tmp_points[idx0].z + scene->tmp_points[idx1].z + scene->tmp_points[idx2].z;
 		face->midz = z;
@@ -266,7 +266,7 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 	// project points to screen
 	for (int i = 0; i < shape->nPoints; ++i)
 	{
-		Point3D* p = &scene->tmp_points[i];
+		float3* p = &scene->tmp_points[i];
 		if (p->z > 0)
 		{
 			p->x = scene->scale * (p->x / p->z + 1.6666666f * scene->centerx);

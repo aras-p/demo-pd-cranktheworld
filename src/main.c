@@ -7,7 +7,7 @@
 #include "pd_api.h"
 #include "mini3d/scene.h"
 
-static Point3D plane_vb[] = {
+static float3 plane_vb[] = {
 { 1.000000f, -1.000000f,  1.000000f},
 {-1.000000f, -1.000000f, -1.000000f},
 {-0.754643f,  0.700373f,  1.000000f},
@@ -117,7 +117,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		mini3d_setRealloc(pd->system->realloc);
 		Scene3D_init(&s_scene);
 		Shape3D_init(&s_shape_plane, sizeof(plane_vb)/sizeof(plane_vb[0]), plane_vb, sizeof(plane_ib) / sizeof(plane_ib[0]) / 3, plane_ib, NULL);
-		Scene3D_setGlobalLight(&s_scene, (Vector3D) { 0.3f, 1.0f, 0.3f });
+		Scene3D_setGlobalLight(&s_scene, (float3) { 0.3f, 1.0f, 0.3f });
 
 		pd->system->setUpdateCallback(update, pd);
 	}
@@ -140,7 +140,7 @@ static LCDPattern pat_3 = LCDOpaquePattern(0x55, 0x55, 0x55, 0x55, 0xaa, 0xaa, 0
 
 #define MAX_PLANES 500
 static int planeCount = 100;
-static Matrix3D planeXforms[MAX_PLANES];
+static xform planeXforms[MAX_PLANES];
 static float planeDistances[MAX_PLANES];
 static int planeOrder[MAX_PLANES];
 
@@ -200,7 +200,7 @@ static int update(void* userdata)
 	float cangle = pd->system->getCrankAngle() * M_PIf / 180.0f;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
-	Scene3D_setCamera(&s_scene, (Point3D) { cs * 8.0f, 3.0f, ss * 8.0f }, (Point3D) { 0, 0, 0 }, 1.0f, (Vector3D) { 0, -1, 0 });
+	Scene3D_setCamera(&s_scene, (float3) { cs * 8.0f, 3.0f, ss * 8.0f }, (float3) { 0, 0, 0 }, 1.0f, (float3) { 0, -1, 0 });
 
 	// position and sort planes
 	for (int i = 0; i < planeCount; ++i)
@@ -219,12 +219,12 @@ static int update(void* userdata)
 			ry = 1;
 			rz = 0;
 		}
-		planeXforms[i] = Matrix3DMakeRotation(rot, (Vector3D) { rx, ry, rz });
-		planeXforms[i].dx = px;
-		planeXforms[i].dy = py;
-		planeXforms[i].dz = pz;
-		//planeXforms[i] = Matrix3DMakeTranslate(px, py, pz);
-		Point3D center = Matrix3D_apply(&s_scene.camera, Matrix3D_apply(&planeXforms[i], s_shape_plane.center));
+		planeXforms[i] = mtx_make_axis_angle(rot, (float3) { rx, ry, rz });
+		planeXforms[i].x = px;
+		planeXforms[i].y = py;
+		planeXforms[i].z = pz;
+		//planeXforms[i] = mtx_make_translate(px, py, pz);
+		float3 center = mtx_transform_pt(&s_scene.camera, mtx_transform_pt(&planeXforms[i], s_shape_plane.center));
 		planeDistances[i] = center.z;
 		planeOrder[i] = i;
 	}

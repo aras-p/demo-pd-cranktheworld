@@ -14,11 +14,11 @@
 typedef struct
 {
 	int nPoints;
-	const Point3D* points;
+	const float3* points;
 	int nFaces;
 	const uint16_t* faces;
 	const float* faceColorBias;
-	Point3D center; // used for z-sorting entire shapes at a time
+	float3 center; // used for z-sorting entire shapes at a time
 } Shape3D;
 
-void Shape3D_init(Shape3D* shape, int vtxCount, const Point3D* vb, int triCount, const uint16_t* ib, const float *triColorBias);
+void Shape3D_init(Shape3D* shape, int vtxCount, const float3* vb, int triCount, const uint16_t* ib, const float *triColorBias);

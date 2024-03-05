@@ -14,63 +14,54 @@ static inline float _lib3d_sqrtf(float x)
 #define sqrtf(f) _lib3d_sqrtf(f)
 #endif
 
-typedef struct
+typedef struct float3
 {
 	float x;
 	float y;
 	float z;
-} Point3D;
+} float3;
 
-typedef struct
+static inline float3 v3_cross(float3 a, float3 b)
 {
-	float dx;
-	float dy;
-	float dz;
-} Vector3D;
-
-static inline Vector3D Vector3DCross(Vector3D a, Vector3D b)
-{
-	return (Vector3D){ .dx = a.dy * b.dz - a.dz * b.dy, .dy = a.dz * b.dx - a.dx * b.dz, .dz = a.dx * b.dy - a.dy * b.dx };
+	return (float3){ .x = a.y * b.z - a.z * b.y, .y = a.z * b.x - a.x * b.z, .z = a.x * b.y - a.y * b.x };
 }
 
-static inline float Vector3DDot(Vector3D a, Vector3D b)
+static inline float v3_dot(float3 a, float3 b)
 {
-	return a.dx * b.dx + a.dy * b.dy + a.dz * b.dz;
+	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-Vector3D pnormal(const Point3D* p1, const Point3D* p2, const Point3D* p3);
+float3 v3_tri_normal(const float3* p1, const float3* p2, const float3* p3);
 
-static inline float Vector3D_lengthSquared(Vector3D* v)
+static inline float v3_lensq(float3* v)
 {
-	return v->dx * v->dx + v->dy * v->dy + v->dz * v->dz;
+	return v->x * v->x + v->y * v->y + v->z * v->z;
 }
 
-static inline float Vector3D_length(Vector3D* v)
+static inline float v3_len(float3* v)
 {
-	return sqrtf(Vector3D_lengthSquared(v));
+	return sqrtf(v3_lensq(v));
 }
 
-static inline Point3D Point3D_addVector(Point3D a, Vector3D v)
+static inline float3 v3_add(float3 a, float3 v)
 {
-	return (Point3D) { a.x + v.dx, a.y + v.dy, a.z + v.dz };
+	return (float3) { a.x + v.x, a.y + v.y, a.z + v.z };
 }
 
-// XXX - which side are we multiplying on?
-
-typedef struct
+typedef struct xform
 {
 	float m[3][3];
-	float dx;
-	float dy;
-	float dz;
-} Matrix3D;
+	float x;
+	float y;
+	float z;
+} xform;
 
-extern Matrix3D identityMatrix;
+extern xform mtx_identity;
 
-Matrix3D Matrix3DMake(float m11, float m12, float m13, float m21, float m22, float m23, float m31, float m32, float m33);
-Matrix3D Matrix3DMakeTranslate(float dx, float dy, float dz);
-Matrix3D Matrix3DMakeRotation(float angle, Vector3D axis);
-Matrix3D Matrix3D_multiply(Matrix3D l, Matrix3D r);
-Point3D Matrix3D_apply(const Matrix3D *m, Point3D p);
+xform mtx_make(float m11, float m12, float m13, float m21, float m22, float m23, float m31, float m32, float m33);
+xform mtx_make_translate(float dx, float dy, float dz);
+xform mtx_make_axis_angle(float angle, float3 axis);
+xform mtx_multiply(const xform* l, const xform* r);
+float3 mtx_transform_pt(const xform *m, float3 p);
 
-float Matrix3D_getDeterminant(Matrix3D* m);
+float mtx_get_determinant(xform* m);
