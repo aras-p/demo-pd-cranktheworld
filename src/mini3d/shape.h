@@ -9,7 +9,7 @@
 #pragma once
 
 #include "mini3d.h"
-#include "3dmath.h"
+#include "../mathlib.h"
 
 typedef struct
 {

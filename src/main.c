@@ -208,7 +208,7 @@ static int update(void* userdata)
 		float px = ((XorShift32(&rng) & 63) - 31.5f);
 		float py = ((XorShift32(&rng) & 15) - 7.5f);
 		float pz = ((XorShift32(&rng) & 63) - 31.5f);
-		float rot = (XorShift32(&rng) % 360);
+		float rot = (XorShift32(&rng) % 360) * 1.0f;
 		float rx = ((XorShift32(&rng) & 63) - 31.5f);
 		float ry = 60;
 		float rz = ((XorShift32(&rng) & 63) - 31.5f);

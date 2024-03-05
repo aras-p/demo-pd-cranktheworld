@@ -9,7 +9,7 @@
 #pragma once
 
 #include <stdio.h>
-#include "3dmath.h"
+#include "../mathlib.h"
 #include "mini3d.h"
 
 void drawLine(uint8_t* bitmap, int rowstride, const Point3D* p1, const Point3D* p2, int thick, const uint8_t pattern[8]);

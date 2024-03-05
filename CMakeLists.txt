@@ -32,8 +32,8 @@ project(${PLAYDATE_GAME_NAME} C ASM)
 
 set (DEMO_SOURCES
 	src/main.c
-	src/mini3d/3dmath.c
-	src/mini3d/3dmath.h
+	src/mathlib.c
+	src/mathlib.h
 	src/mini3d/mini3d.c
 	src/mini3d/mini3d.h
 	src/mini3d/render.c

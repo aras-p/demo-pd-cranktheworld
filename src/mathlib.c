@@ -7,7 +7,7 @@
 //
 
 #include <string.h>
-#include "3dmath.h"
+#include "mathlib.h"
 
 Matrix3D identityMatrix = { .isIdentity = 1, .inverting = 0, .m = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, .dx = 0, .dy = 0, .dz = 0 };
 

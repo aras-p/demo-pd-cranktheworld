@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "3dmath.h"
+#include "../mathlib.h"
 #include "mini3d.h"
 #include "scene.h"
 #include "shape.h"

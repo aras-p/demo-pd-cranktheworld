@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "3dmath.h"
+#include "../mathlib.h"
 #include "shape.h"
 
 typedef enum
