@@ -8,34 +8,34 @@
 #include "mini3d/scene.h"
 
 static Point3D plane_vb[] = {
- 1.000000f, -1.000000f,  1.000000f,
--1.000000f, -1.000000f, -1.000000f,
--0.754643f,  0.700373f,  1.000000f,
--0.654210f, -0.654210f,  2.619101f,
--0.480073f,  0.111070f,  2.879520f,
- 0.480073f,  0.111070f,  2.879520f,
- 0.654210f, -0.654210f,  2.619101f,
--1.000000f, -1.000000f,  1.000000f,
- 0.754643f,  0.408254f, -1.529500f,
- 1.000000f, -1.000000f, -1.000000f,
- 0.754643f,  0.700373f,  1.000000f,
--0.754643f,  0.408254f, -1.529500f,
--1.283430f, -0.567080f, -1.000000f,
--1.283430f, -0.567080f,  1.000000f,
- 1.283430f,  0.050230f, -1.000000f,
- 1.283430f, -0.567080f, -1.000000f,
--1.283430f,  0.050230f,  1.000000f,
- 1.283430f,  0.050230f,  1.000000f,
- 1.283430f, -0.567080f,  1.000000f,
--1.283430f,  0.050230f, -1.000000f,
--3.291110f, -0.774914f, -1.192131f,
--3.291110f, -0.774914f, -0.118306f,
- 3.291110f, -0.447044f, -1.192131f,
- 3.291110f, -0.774914f, -1.192131f,
--3.291110f, -0.447044f, -0.118306f,
- 3.291110f, -0.447044f, -0.118306f,
- 3.291110f, -0.774914f, -0.118306f,
--3.291110f, -0.447044f, -1.192131f,
+{ 1.000000f, -1.000000f,  1.000000f},
+{-1.000000f, -1.000000f, -1.000000f},
+{-0.754643f,  0.700373f,  1.000000f},
+{-0.654210f, -0.654210f,  2.619101f},
+{-0.480073f,  0.111070f,  2.879520f},
+{ 0.480073f,  0.111070f,  2.879520f},
+{ 0.654210f, -0.654210f,  2.619101f},
+{-1.000000f, -1.000000f,  1.000000f},
+{ 0.754643f,  0.408254f, -1.529500f},
+{ 1.000000f, -1.000000f, -1.000000f},
+{ 0.754643f,  0.700373f,  1.000000f},
+{-0.754643f,  0.408254f, -1.529500f},
+{-1.283430f, -0.567080f, -1.000000f},
+{-1.283430f, -0.567080f,  1.000000f},
+{ 1.283430f,  0.050230f, -1.000000f},
+{ 1.283430f, -0.567080f, -1.000000f},
+{-1.283430f,  0.050230f,  1.000000f},
+{ 1.283430f,  0.050230f,  1.000000f},
+{ 1.283430f, -0.567080f,  1.000000f},
+{-1.283430f,  0.050230f, -1.000000f},
+{-3.291110f, -0.774914f, -1.192131f},
+{-3.291110f, -0.774914f, -0.118306f},
+{ 3.291110f, -0.447044f, -1.192131f},
+{ 3.291110f, -0.774914f, -1.192131f},
+{-3.291110f, -0.447044f, -0.118306f},
+{ 3.291110f, -0.447044f, -0.118306f},
+{ 3.291110f, -0.774914f, -0.118306f},
+{-3.291110f, -0.447044f, -1.192131f},
 };
 
 static uint16_t plane_ib[] = {
@@ -94,6 +94,7 @@ static uint16_t plane_ib[] = {
 };
 
 static int update(void* userdata);
+
 const char* fontpath = "/System/Fonts/Roobert-10-Bold.pft";
 LCDFont* font = NULL;
 
@@ -106,8 +107,6 @@ __declspec(dllexport)
 #endif
 int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 {
-	(void)arg; // arg is currently only used for event = kEventKeyPressed
-
 	if (event == kEventInit)
 	{
 		const char* err;
@@ -118,8 +117,6 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		mini3d_setRealloc(pd->system->realloc);
 		Scene3D_init(&s_scene);
 		Shape3D_init(&s_shape_plane, sizeof(plane_vb)/sizeof(plane_vb[0]), plane_vb, sizeof(plane_ib) / sizeof(plane_ib[0]) / 3, plane_ib, NULL);
-		Scene3DNode_addShape(&s_scene.root, &s_shape_plane);
-		Scene3DNode_setRenderStyle(&s_scene.root, kRenderFilled | kRenderWireframe);
 		Scene3D_setGlobalLight(&s_scene, Vector3DMake(0.3f, 1.0f, 0.3f));
 
 		pd->system->setUpdateCallback(update, pd);
@@ -141,22 +138,27 @@ static LCDPattern pat_1 = LCDOpaquePattern(0x11, 0x33, 0x77, 0x80, 0x81, 0x83, 0
 static LCDPattern pat_2 = LCDOpaquePattern(0x11, 0x22, 0x44, 0x88, 0x81, 0x42, 0x24, 0x18);
 static LCDPattern pat_3 = LCDOpaquePattern(0x55, 0x55, 0x55, 0x55, 0xaa, 0xaa, 0xaa, 0xaa);
 
-static int triCount = 2;
+#define MAX_PLANES 500
+static int planeCount = 10;
+static Matrix3D planeXforms[MAX_PLANES];
+static float planeDistances[MAX_PLANES];
+static int planeOrder[MAX_PLANES];
 
 static void checkCrank(PlaydateAPI *pd)
 {
-	float change = pd->system->getCrankChange();
-
-	if (change > 1) {
-		triCount += 1;
-		if (triCount > 9999)
-			triCount = 9999;
-		//pd->system->logToConsole("Tri count: %d", triCount);
+	PDButtons btCur, btPushed, btRel;
+	pd->system->getButtonState(&btCur, &btPushed, &btRel);
+	if (btPushed & kButtonLeft)
+	{
+		planeCount -= 1;
+		if (planeCount < 1)
+			planeCount = 1;
 	}
-	else if (change < -1) {
-		triCount -= 1;
-		if (triCount < 2) { triCount = 2; }
-		//pd->system->logToConsole("Tri count: %d", triCount);
+	if (btPushed & kButtonRight)
+	{
+		planeCount += 1;
+		if (planeCount > MAX_PLANES)
+			planeCount = MAX_PLANES;
 	}
 }
 
@@ -172,6 +174,19 @@ static uint32_t XorShift32(uint32_t *state)
 
 static uint32_t rng = 1;
 
+static int CompareZ(const void* a, const void* b)
+{
+	int ia = *(const int*)a;
+	int ib = *(const int*)b;
+	float za = planeDistances[ia];
+	float zb = planeDistances[ib];
+	if (za < zb)
+		return +1;
+	if (za > zb)
+		return -1;
+	return 0;
+}
+
 static int update(void* userdata)
 {
 	PlaydateAPI* pd = userdata;
@@ -181,39 +196,41 @@ static int update(void* userdata)
 
 	rng = 1;
 
-	/*
-	for (int i = 0; i < triCount; i++)
-	{
-		int x1 = XorShift32(&rng) % LCD_COLUMNS;
-		int y1 = XorShift32(&rng) % LCD_ROWS;
-		int x2 = XorShift32(&rng) % LCD_COLUMNS;
-		int y2 = XorShift32(&rng) % LCD_ROWS;
-		int x3 = XorShift32(&rng) % LCD_COLUMNS;
-		int y3 = XorShift32(&rng) % LCD_ROWS;
-		int patIdx = i % 3;
-		//pd->graphics->fillTriangle(x1, y1, x2, y2, x3, y3, (LCDColor)(patIdx == 0 ? pat_1 : patIdx==1 ? pat_2 : pat_3));
-		Point3D pt1 = Point3DMake(x1, y1, 0);
-		Point3D pt2 = Point3DMake(x2, y2, 0);
-		Point3D pt3 = Point3DMake(x3, y3, 0);
-		fillTriangle(pd->graphics->getFrame(), LCD_ROWSIZE, &pt1, &pt2, &pt3, patIdx == 0 ? pat_1 : patIdx == 1 ? pat_2 : pat_3);
-	}
-	*/
-
 	float cangle = pd->system->getCrankAngle() * M_PIf / 180.0f;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
-	Scene3D_setCamera(&s_scene, Point3DMake(cs * 5.0f, 3.0f, ss * 5.0f), Point3DMake(0,0,0), 1.0f, Vector3DMake(0,-1,0));
+	Scene3D_setCamera(&s_scene, Point3DMake(cs * 8.0f, 3.0f, ss * 8.0f), Point3DMake(0,0,0), 1.0f, Vector3DMake(0,-1,0));
 
-	Scene3D_draw(&s_scene, pd->graphics->getFrame(), LCD_ROWSIZE);
+	// position and sort planes
+	for (int i = 0; i < planeCount; ++i)
+	{
+		float px = ((XorShift32(&rng) & 63) - 31.5f);
+		float py = ((XorShift32(&rng) & 15) - 7.5f);
+		float pz = ((XorShift32(&rng) & 63) - 31.5f);
+		if (i == 0) {
+			px = py = pz = 0.0f;
+		}
+		planeXforms[i] = Matrix3DMakeTranslate(px, py, pz);
+		Point3D center = Matrix3D_apply(s_scene.camera, Matrix3D_apply(planeXforms[i], s_shape_plane.center));
+		planeDistances[i] = center.z;
+		planeOrder[i] = i;
+	}
+	qsort(planeOrder, planeCount, sizeof(planeOrder[0]), CompareZ);
+
+	// draw
+	for (int i = 0; i < planeCount; ++i)
+	{
+		int idx = planeOrder[i];
+		Scene3D_drawShape(&s_scene, pd->graphics->getFrame(), LCD_ROWSIZE, &s_shape_plane, &planeXforms[idx], kRenderFilled | kRenderWireframe, 0.0f);
+	}
 
 	pd->graphics->fillRect(0, 0, 100, 48, kColorWhite);
 
 	char buf[100];
-	buf[0] = triCount / 1000 % 10 + '0';
-	buf[1] = triCount / 100 % 10 + '0';
-	buf[2] = triCount / 10 % 10 + '0';
-	buf[3] = triCount / 1 % 10 + '0';
-	buf[4] = 0;
+	buf[0] = planeCount / 100 % 10 + '0';
+	buf[1] = planeCount / 10 % 10 + '0';
+	buf[2] = planeCount / 1 % 10 + '0';
+	buf[3] = 0;
 	pd->graphics->setFont(font);
 	pd->graphics->drawText(buf, strlen(buf), kASCIIEncoding, 0, 20);
 
@@ -230,4 +247,3 @@ static int update(void* userdata)
 
 	return 1;
 }
-

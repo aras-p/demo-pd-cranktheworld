@@ -29,5 +29,4 @@ void Shape3D_init(Shape3D* shape, int vtxCount, const Point3D* vb, int triCount,
 	shape->center.x /= vtxCount;
 	shape->center.y /= vtxCount;
 	shape->center.z /= vtxCount;
-	shape->colorBias = 0;
 }
