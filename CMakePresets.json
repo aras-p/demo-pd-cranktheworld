@@ -8,23 +8,9 @@
             "installDir": "${sourceDir}/build/${presetName}"
         },
         {
-            "name": "windows-base",
-            "inherits": "all-base",
-            "hidden": true,
-            "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_C_COMPILER": "cl.exe"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            }
-        },
-        {
             "name": "x64-debug",
             "displayName": "x64 Debug",
-            "inherits": "windows-base",
+            "inherits": "all-base",
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
