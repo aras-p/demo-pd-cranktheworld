@@ -8,15 +8,17 @@ typedef enum
 {
 	kFxPlanes = 0,
 	kFxStarfield,
+	kFxPlasma,
 	kFxCount,
 } EffectType;
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = 0;
+static EffectType s_cur_effect = kFxPlasma;
 
 Effect fx_planes_init();
 Effect fx_starfield_init();
+Effect fx_plasma_init();
 
 
 static int update(void* userdata);
@@ -40,6 +42,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 
 		s_effects[kFxPlanes] = fx_planes_init();
 		s_effects[kFxStarfield] = fx_starfield_init();
+		s_effects[kFxPlasma] = fx_plasma_init();
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);
@@ -70,7 +73,7 @@ static int update(void* userdata)
 	int dbg_value = 0;
 	dbg_value = s_effects[s_cur_effect].update(btCur, pd->system->getCrankAngle(), pd->system->getElapsedTime(), pd->graphics->getFrame(), LCD_ROWSIZE);
 
-	pd->graphics->fillRect(0, 0, 30, 32, kColorWhite);
+	pd->graphics->fillRect(0, 0, 40, 32, kColorWhite);
 
 	char buf[100];
 	buf[0] = dbg_value / 10000 % 10 + '0';
