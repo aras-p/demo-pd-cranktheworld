@@ -22,6 +22,8 @@ static inline float _lib3d_sqrtf(float x)
 #define MAX(a, b) (((a)>(b))?(a):(b))
 #endif
 
+#define M_PIf (3.14159265f)
+
 typedef struct float3
 {
 	float x;
