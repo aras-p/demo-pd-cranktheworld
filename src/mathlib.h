@@ -14,6 +14,14 @@ static inline float _lib3d_sqrtf(float x)
 #define sqrtf(f) _lib3d_sqrtf(f)
 #endif
 
+#if !defined(MIN)
+#define MIN(a, b) (((a)<(b))?(a):(b))
+#endif
+
+#if !defined(MAX)
+#define MAX(a, b) (((a)>(b))?(a):(b))
+#endif
+
 typedef struct float3
 {
 	float x;

@@ -13,14 +13,6 @@
 #define LCD_ROWS 240
 #define LCD_COLUMNS 400
 
-#if !defined(MIN)
-#define MIN(a, b) (((a)<(b))?(a):(b))
-#endif
-
-#if !defined(MAX)
-#define MAX(a, b) (((a)>(b))?(a):(b))
-#endif
-
 static inline uint32_t swap(uint32_t n)
 {
 #if TARGET_PLAYDATE
