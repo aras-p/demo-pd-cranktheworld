@@ -1,0 +1,17 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "${env.PLAYDATE_SDK_PATH}\\bin\\PlaydateSimulator.exe",
+      "project": "CMakeLists.txt",
+      "projectTarget": "playdate_demo.dll",
+      "name": "playdate_demo.dll",
+      "program": "${env.PLAYDATE_SDK_PATH}\\bin\\PlaydateSimulator.exe",
+      "args": [
+        "${workspaceRoot}\\playdate_demo.pdx"
+      ]
+    }
+  ]
+}
