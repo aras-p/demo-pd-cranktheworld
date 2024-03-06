@@ -247,10 +247,12 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 		scene->tmp_face_normals[i] = v3_tri_normal(&scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2]);
 
 		float z = -(scene->tmp_points[idx0].z + scene->tmp_points[idx1].z + scene->tmp_points[idx2].z);
-		uint32_t zbits = float_flip(*(const uint32_t*)&z);
+		union { float f; uint32_t u; } zbits;
+		zbits.f = z;
+		zbits.u = float_flip(zbits.u);
 		// put face index into lowest 8 bits
-		zbits = (zbits & 0xFFFFFF00) | i;
-		scene->tmp_order_table1[i] = zbits;
+		zbits.u = (zbits.u & 0xFFFFFF00) | i;
+		scene->tmp_order_table1[i] = zbits.u;
 	}
 
 	// project points to screen

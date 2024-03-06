@@ -18,6 +18,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #include "radixsort.h"
+#include <string.h>
 
 #define kRadixBits 8
 #define kHistBuckets (1 + (((sizeof(uint32_t) * 8) - 1) / kRadixBits))
