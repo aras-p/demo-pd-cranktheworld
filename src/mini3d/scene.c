@@ -136,7 +136,7 @@ static Pattern patterns[] =
 	{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
 };
 
-static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, const float3 *p1, const float3 *p2, const float3 *p3, const float3* normal, RenderStyle style, float colorBias)
+static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, const float3 *p1, const float3 *p2, const float3 *p3, const float3* normal, RenderStyle style)
 {
 	// If any vertex is behind the camera, skip it
 	if (p1->z <= 0 || p2->z <= 0 || p3->z <= 0)
@@ -156,67 +156,49 @@ static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, 
 		 (y1 >= HEIGHT && y2 >= HEIGHT && y3 >= HEIGHT) )
 		return;
 
-	int inverted = 0; //@TODO?
-
 	// only render front side of faces via winding order
 	float dx21 = x2 - x1;
 	float dy31 = y3 - y1;
 	float dx31 = x3 - x1;
 	float dy21 = y2 - y1;
 	float d = dx21 * dy31 - dy21 * dx31;
-	if ( (d >= 0) ^ (inverted ? 1 : 0) )
+	if (d >= 0)
 		return;
 
 	//float kSmallPx = 8.0f;
 	//if (fabsf(dx21) < kSmallPx && fabsf(dy31) < kSmallPx && fabsf(dx31) < kSmallPx && fabsf(dy21) < kSmallPx)
 	//	return;
 
+	// lighting
+	float v = 0.5f - v3_dot(*normal, scene->light) * 0.5f;
+
+	// cheap gamma adjust
+	//v = v * v;
+
+	int vi = (int)(32.99f * v);
+
+	if (vi > 32)
+		vi = 32;
+	else if (vi < 0)
+		vi = 0;
+
 	// fill
 	if (style & kRenderFilled)
 	{
-		// lighting
-
-		float c = colorBias;
-		float v;
-
-		if (c <= -1)
-			v = 0;
-		else if (c >= 1)
-			v = 1;
-		else
-		{
-			if (inverted)
-				v = (1.0f + v3_dot(*normal, scene->light)) / 2;
-			else
-				v = (1.0f - v3_dot(*normal, scene->light)) / 2;
-
-			if (c > 0)
-				v = c + (1 - c) * v; // map [0,1] to [c,1]
-			else if (c < 0)
-				v *= 1 + c; // map [0,1] to [0, 1+c]
-		}
-
-		// cheap gamma adjust
-		// v = v * v;
-
-		int vi = (int)(32.99f * v);
-
-		if (vi > 32)
-			vi = 32;
-		else if (vi < 0)
-			vi = 0;
-
-		uint8_t* pattern = (uint8_t*)&patterns[vi];
+		const uint8_t* pattern = (const uint8_t*)&patterns[vi];
 		fillTriangle(bitmap, rowstride, p1, p2, p3, pattern);
 	}
 
 	// edges
 	if (style & kRenderWireframe)
 	{
-		const uint8_t* color = patterns[0]; // 32: white, 0: black
-		drawLine(bitmap, rowstride, p1, p2, 1, color);
-		drawLine(bitmap, rowstride, p2, p3, 1, color);
-		drawLine(bitmap, rowstride, p3, p1, 1, color);
+		//const uint8_t* color = patterns[0]; // 32: white, 0: black
+		vi -= 16;
+		if (vi < 0) vi = 0;
+		const uint8_t* pattern = (const uint8_t*)&patterns[vi];
+		drawLine(bitmap, rowstride, p1, p2, 1, pattern);
+		drawLine(bitmap, rowstride, p2, p3, 1, pattern);
+		drawLine(bitmap, rowstride, p3, p1, 1, pattern);
 	}
 }
 
@@ -226,7 +208,7 @@ static inline uint32_t float_flip(uint32_t f)
 	return f ^ mask;
 }
 
-void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const xform* matrix, RenderStyle style, float colorBias)
+void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const xform* matrix, RenderStyle style)
 {
 	// temporary buffers
 	if (scene->tmp_points_cap < shape->nPoints) {
@@ -285,6 +267,6 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 		uint16_t idx0 = shape->faces[fi * 3 + 0];
 		uint16_t idx1 = shape->faces[fi * 3 + 1];
 		uint16_t idx2 = shape->faces[fi * 3 + 2];
-		drawShapeFace(scene, buffer, rowstride, &scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2], &scene->tmp_face_normals[fi], style, colorBias); //@TODO: face bias
+		drawShapeFace(scene, buffer, rowstride, &scene->tmp_points[idx0], &scene->tmp_points[idx1], &scene->tmp_points[idx2], &scene->tmp_face_normals[fi], style);
 	}
 }

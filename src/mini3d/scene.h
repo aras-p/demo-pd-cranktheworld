@@ -36,4 +36,4 @@ void Scene3D_setCamera(Scene3D* scene, float3 origin, float3 lookAt, float scale
 void Scene3D_setGlobalLight(Scene3D* scene, float3 light);
 void Scene3D_setCenter(Scene3D* scene, float x, float y);
 
-void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const xform* matrix, RenderStyle style, float colorBias);
+void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Shape3D* shape, const xform* matrix, RenderStyle style);

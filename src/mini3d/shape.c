@@ -1,13 +1,12 @@
 #include "mini3d.h"
 #include "shape.h"
 
-void Shape3D_init(Shape3D* shape, int vtxCount, const float3* vb, int triCount, const uint16_t* ib, const float* triColorBias)
+void Shape3D_init(Shape3D* shape, int vtxCount, const float3* vb, int triCount, const uint16_t* ib)
 {
 	shape->nPoints = vtxCount;
 	shape->points = vb;
 	shape->nFaces = triCount;
 	shape->faces = ib;
-	shape->faceColorBias = triColorBias;
 	float3 bmin = { 1.0e30f, 1.0e30f, 1.0e30f };
 	float3 bmax = { -1.0e30f, -1.0e30f, -1.0e30f };
 	shape->center.x = 0;
