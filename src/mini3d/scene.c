@@ -159,9 +159,17 @@ static void drawShapeFace(const Scene3D* scene, uint8_t* bitmap, int rowstride, 
 	int inverted = 0; //@TODO?
 
 	// only render front side of faces via winding order
-	float d = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+	float dx21 = x2 - x1;
+	float dy31 = y3 - y1;
+	float dx31 = x3 - x1;
+	float dy21 = y2 - y1;
+	float d = dx21 * dy31 - dy21 * dx31;
 	if ( (d >= 0) ^ (inverted ? 1 : 0) )
 		return;
+
+	//float kSmallPx = 8.0f;
+	//if (fabsf(dx21) < kSmallPx && fabsf(dy31) < kSmallPx && fabsf(dx31) < kSmallPx && fabsf(dy21) < kSmallPx)
+	//	return;
 
 	// fill
 	if (style & kRenderFilled)
