@@ -31,6 +31,8 @@ set(PLAYDATE_GAME_DEVICE playdate_demo_DEVICE)
 project(${PLAYDATE_GAME_NAME} C ASM)
 
 set (DEMO_SOURCES
+	src/allocator.c
+	src/allocator.h
 	src/main.c
 	src/mathlib.c
 	src/mathlib.h
@@ -38,14 +40,16 @@ set (DEMO_SOURCES
 	src/effects/fx_planes.c
 	src/effects/fx_plasma.c
 	src/effects/fx_starfield.c
-	src/mini3d/mini3d.c
-	src/mini3d/mini3d.h
 	src/mini3d/render.c
 	src/mini3d/render.h
 	src/mini3d/scene.c
 	src/mini3d/scene.h
 	src/mini3d/shape.c
 	src/mini3d/shape.h
+	src/util/pixel_ops.c
+	src/util/pixel_ops.h
+	src/util/image_loader.c
+	src/util/image_loader.h
 	src/external/bitshifter_radixsort/radixsort.c
 	src/external/bitshifter_radixsort/radixsort.h
 )

@@ -1,14 +1,5 @@
-//
-//  shape.h
-//  Extension
-//
-//  Created by Dave Hayden on 10/7/15.
-//  Copyright © 2015 Panic, Inc. All rights reserved.
-//
-
 #pragma once
 
-#include "mini3d.h"
 #include "../mathlib.h"
 
 typedef struct

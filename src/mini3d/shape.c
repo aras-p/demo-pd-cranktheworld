@@ -1,4 +1,3 @@
-#include "mini3d.h"
 #include "shape.h"
 
 void Shape3D_init(Shape3D* shape, int vtxCount, const float3* vb, int triCount, const uint16_t* ib)

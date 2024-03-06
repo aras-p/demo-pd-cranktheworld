@@ -2,6 +2,7 @@
 
 #include "pd_api.h"
 #include "../mathlib.h"
+#include "../util/pixel_ops.h"
 
 #define TRIG_TABLE_SIZE 512
 #define TRIG_TABLE_MASK (TRIG_TABLE_SIZE-1)
@@ -25,12 +26,13 @@ static uint16_t s_plasma_pos2;
 static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
 
-static int fx_plasma_update(uint32_t buttons_cur, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_plasma_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	s_rng = 1;
 	int tpos4 = s_plasma_pos4;
 	int tpos3 = s_plasma_pos3;
 
+	int pix_idx = 0;
 	for (int py = 0; py < LCD_ROWS; ++py)
 	{
 		int tpos1 = s_plasma_pos1 + 5;
@@ -41,7 +43,7 @@ static int fx_plasma_update(uint32_t buttons_cur, float crank_angle, float time,
 
 		uint8_t* row = framebuffer + py * framebuffer_stride;
 
-		for (int px = 0; px < LCD_COLUMNS; ++px)
+		for (int px = 0; px < LCD_COLUMNS; ++px, ++pix_idx)
 		{
 			tpos1 &= TRIG_TABLE_MASK;
 			tpos2 &= TRIG_TABLE_MASK;
@@ -52,10 +54,10 @@ static int fx_plasma_update(uint32_t buttons_cur, float crank_angle, float time,
 			index &= 0xFF;
 			//if (index < 0) index = 0;
 			//if (index > 255) index = 255;
-			int test = XorShift32(&s_rng) & 0xFF;
+
+			int test = g_blue_noise[pix_idx];
 			if (index < test) {
-				uint8_t mask = ~(1 << (7 - (px & 7)));
-				row[px >> 3] &= mask;
+				put_pixel_black(row, px);
 			}
 
 			tpos1 += 5;
@@ -75,8 +77,9 @@ static int fx_plasma_update(uint32_t buttons_cur, float crank_angle, float time,
 	return 0;
 }
 
-Effect fx_plasma_init()
+Effect fx_plasma_init(void* pd_api)
 {
 	init_sin_table();
+
 	return (Effect) {fx_plasma_update};
 }

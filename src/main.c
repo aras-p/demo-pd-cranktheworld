@@ -2,7 +2,8 @@
 #include "effects/fx.h"
 
 #include "pd_api.h"
-#include "mini3d/mini3d.h"
+#include "allocator.h"
+#include "util/pixel_ops.h"
 
 typedef enum
 {
@@ -16,9 +17,9 @@ static Effect s_effects[kFxCount];
 
 static EffectType s_cur_effect = kFxPlasma;
 
-Effect fx_planes_init();
-Effect fx_starfield_init();
-Effect fx_plasma_init();
+Effect fx_planes_init(void* pd_api);
+Effect fx_starfield_init(void* pd_api);
+Effect fx_plasma_init(void* pd_api);
 
 
 static int update(void* userdata);
@@ -38,11 +39,13 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		if (font == NULL)
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
 
-		mini3d_setRealloc(pd->system->realloc);
+		pd_realloc = pd->system->realloc;
 
-		s_effects[kFxPlanes] = fx_planes_init();
-		s_effects[kFxStarfield] = fx_starfield_init();
-		s_effects[kFxPlasma] = fx_plasma_init();
+		init_blue_noise(pd);
+
+		s_effects[kFxPlanes] = fx_planes_init(pd);
+		s_effects[kFxStarfield] = fx_starfield_init(pd);
+		s_effects[kFxPlasma] = fx_plasma_init(pd);
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);
@@ -71,7 +74,7 @@ static int update(void* userdata)
 	pd->graphics->clear(kColorWhite);
 
 	int dbg_value = 0;
-	dbg_value = s_effects[s_cur_effect].update(btCur, pd->system->getCrankAngle(), pd->system->getElapsedTime(), pd->graphics->getFrame(), LCD_ROWSIZE);
+	dbg_value = s_effects[s_cur_effect].update(btCur, btPushed, pd->system->getCrankAngle(), pd->system->getElapsedTime(), pd->graphics->getFrame(), LCD_ROWSIZE);
 
 	pd->graphics->fillRect(0, 0, 40, 32, kColorWhite);
 

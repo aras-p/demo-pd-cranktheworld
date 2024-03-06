@@ -1,7 +1,7 @@
 #include <string.h>
 #include "../mathlib.h"
 #include "../external/bitshifter_radixsort/radixsort.h"
-#include "mini3d.h"
+#include "../allocator.h"
 #include "scene.h"
 #include "shape.h"
 #include "render.h"
@@ -25,14 +25,10 @@ void Scene3D_init(Scene3D* scene)
 
 void Scene3D_deinit(Scene3D* scene)
 {
-	if (scene->tmp_points != NULL)
-		m3d_free(scene->tmp_points);
-	if (scene->tmp_face_normals != NULL)
-		m3d_free(scene->tmp_face_normals);
-	if (scene->tmp_order_table1 != NULL)
-		m3d_free(scene->tmp_order_table1);
-	if (scene->tmp_order_table2 != NULL)
-		m3d_free(scene->tmp_order_table2);
+	pd_free(scene->tmp_points);
+	pd_free(scene->tmp_face_normals);
+	pd_free(scene->tmp_order_table1);
+	pd_free(scene->tmp_order_table2);
 }
 
 void
@@ -213,13 +209,13 @@ void Scene3D_drawShape(Scene3D* scene, uint8_t* buffer, int rowstride, const Sha
 	// temporary buffers
 	if (scene->tmp_points_cap < shape->nPoints) {
 		scene->tmp_points_cap = shape->nPoints;
-		scene->tmp_points = m3d_realloc(scene->tmp_points, scene->tmp_points_cap * sizeof(scene->tmp_points[0]));
+		scene->tmp_points = pd_realloc(scene->tmp_points, scene->tmp_points_cap * sizeof(scene->tmp_points[0]));
 	}
 	if (scene->tmp_faces_cap < shape->nFaces) {
 		scene->tmp_faces_cap = shape->nFaces;
-		scene->tmp_face_normals = m3d_realloc(scene->tmp_face_normals, scene->tmp_faces_cap * sizeof(scene->tmp_face_normals[0]));
-		scene->tmp_order_table1 = m3d_realloc(scene->tmp_order_table1, scene->tmp_faces_cap * sizeof(scene->tmp_order_table1[0]));
-		scene->tmp_order_table2 = m3d_realloc(scene->tmp_order_table2, scene->tmp_faces_cap * sizeof(scene->tmp_order_table2[0]));
+		scene->tmp_face_normals = pd_realloc(scene->tmp_face_normals, scene->tmp_faces_cap * sizeof(scene->tmp_face_normals[0]));
+		scene->tmp_order_table1 = pd_realloc(scene->tmp_order_table1, scene->tmp_faces_cap * sizeof(scene->tmp_order_table1[0]));
+		scene->tmp_order_table2 = pd_realloc(scene->tmp_order_table2, scene->tmp_faces_cap * sizeof(scene->tmp_order_table2[0]));
 	}
 
 	// transform points

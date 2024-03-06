@@ -113,7 +113,7 @@ static int CompareZ(const void* a, const void* b)
 }
 
 
-static int fx_planes_update(uint32_t buttons_cur, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_planes_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	if (buttons_cur & kButtonLeft)
 	{
@@ -173,7 +173,7 @@ static int fx_planes_update(uint32_t buttons_cur, float crank_angle, float time,
 	return planeCount;
 }
 
-Effect fx_planes_init()
+Effect fx_planes_init(void* pd_api)
 {
 	Scene3D_init(&s_scene);
 	Shape3D_init(&s_shape_plane, sizeof(g_mesh_Cube_vb) / sizeof(g_mesh_Cube_vb[0]), g_mesh_Cube_vb, sizeof(g_mesh_Cube_ib) / sizeof(g_mesh_Cube_ib[0]) / 3, g_mesh_Cube_ib);

@@ -2,6 +2,7 @@
 
 #include "pd_api.h"
 #include "../mathlib.h"
+#include "../util/pixel_ops.h"
 
 typedef struct Star {
 	float3 pos;
@@ -23,7 +24,7 @@ static void star_init(Star* s, uint32_t* rng)
 	s->speed = RandomFloat01(rng) * 70 + 30;
 }
 
-static int fx_stars_update(uint32_t buttons_cur, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_stars_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	const int kStep = 251;
 	if (buttons_cur & kButtonLeft)
@@ -64,14 +65,13 @@ static int fx_stars_update(uint32_t buttons_cur, float crank_angle, float time, 
 		}
 
 		uint8_t* row = framebuffer + py * framebuffer_stride;
-		uint8_t mask = ~(1 << (7-(px & 7)));
-		row[px >> 3] &= mask;
+		put_pixel_black(row, px);
 	}
 
 	return s_star_count;
 }
 
-Effect fx_starfield_init()
+Effect fx_starfield_init(void* pd_api)
 {
 	for (int i = 0; i < s_star_count; ++i) {
 		star_init(&s_stars[i], &s_rng);
