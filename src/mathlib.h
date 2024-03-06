@@ -24,6 +24,22 @@ static inline float _lib3d_sqrtf(float x)
 
 #define M_PIf (3.14159265f)
 
+
+static inline uint32_t XorShift32(uint32_t* state)
+{
+	uint32_t x = *state;
+	x ^= x << 13;
+	x ^= x >> 17;
+	x ^= x << 15;
+	*state = x;
+	return x;
+}
+
+static inline float RandomFloat01(uint32_t* state)
+{
+	return (XorShift32(state) & 0xFFFFFF) / 16777216.0f;
+}
+
 typedef struct float3
 {
 	float x;

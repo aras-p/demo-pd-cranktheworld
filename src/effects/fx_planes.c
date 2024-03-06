@@ -1,4 +1,4 @@
-#include "fx_planes.h"
+#include "fx.h"
 
 #include <stdlib.h>
 
@@ -93,30 +93,11 @@ uint16_t g_mesh_Cube_ib[] = { // 52 tris
 static Scene3D s_scene;
 static Shape3D s_shape_plane;
 
-void fx_planes_init()
-{
-	Scene3D_init(&s_scene);
-	Shape3D_init(&s_shape_plane, sizeof(g_mesh_Cube_vb) / sizeof(g_mesh_Cube_vb[0]), g_mesh_Cube_vb, sizeof(g_mesh_Cube_ib) / sizeof(g_mesh_Cube_ib[0]) / 3, g_mesh_Cube_ib);
-	Scene3D_setGlobalLight(&s_scene, (float3) { 0.3f, 1.0f, 0.3f });
-}
-
 #define MAX_PLANES 500
 static int planeCount = 100;
 static xform planeXforms[MAX_PLANES];
 static float planeDistances[MAX_PLANES];
 static int planeOrder[MAX_PLANES];
-
-static uint32_t XorShift32(uint32_t* state)
-{
-	uint32_t x = *state;
-	x ^= x << 13;
-	x ^= x >> 17;
-	x ^= x << 15;
-	*state = x;
-	return x;
-}
-
-static uint32_t rng = 1;
 
 static int CompareZ(const void* a, const void* b)
 {
@@ -132,7 +113,7 @@ static int CompareZ(const void* a, const void* b)
 }
 
 
-int fx_planes_update(uint32_t buttons_cur, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_planes_update(uint32_t buttons_cur, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	if (buttons_cur & kButtonLeft)
 	{
@@ -147,7 +128,7 @@ int fx_planes_update(uint32_t buttons_cur, float crank_angle, float time, uint8_
 			planeCount = MAX_PLANES;
 	}
 
-	rng = 1;
+	uint32_t rng = 1;
 
 	float cangle = crank_angle * M_PIf / 180.0f;
 	float cs = cosf(cangle);
@@ -186,8 +167,16 @@ int fx_planes_update(uint32_t buttons_cur, float crank_angle, float time, uint8_
 	for (int i = 0; i < planeCount; ++i)
 	{
 		int idx = planeOrder[i];
-		Scene3D_drawShape(&s_scene, framebuffer, framebuffer_stride, &s_shape_plane, &planeXforms[idx], kRenderFilled | kRenderWireframe, 0.0f);
+		Scene3D_drawShape(&s_scene, framebuffer, framebuffer_stride, &s_shape_plane, &planeXforms[idx], kRenderFilled | kRenderWireframe);
 	}
 
 	return planeCount;
+}
+
+Effect fx_planes_init()
+{
+	Scene3D_init(&s_scene);
+	Shape3D_init(&s_shape_plane, sizeof(g_mesh_Cube_vb) / sizeof(g_mesh_Cube_vb[0]), g_mesh_Cube_vb, sizeof(g_mesh_Cube_ib) / sizeof(g_mesh_Cube_ib[0]) / 3, g_mesh_Cube_ib);
+	Scene3D_setGlobalLight(&s_scene, (float3) { 0.3f, 1.0f, 0.3f });
+	return (Effect) {fx_planes_update};
 }

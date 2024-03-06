@@ -1,7 +1,23 @@
 
-#include "effects/fx_planes.h"
+#include "effects/fx.h"
 
 #include "pd_api.h"
+#include "mini3d/mini3d.h"
+
+typedef enum
+{
+	kFxPlanes = 0,
+	kFxStarfield,
+	kFxCount,
+} EffectType;
+
+static Effect s_effects[kFxCount];
+
+static EffectType s_cur_effect = 0;
+
+Effect fx_planes_init();
+Effect fx_starfield_init();
+
 
 static int update(void* userdata);
 
@@ -22,7 +38,8 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 
 		mini3d_setRealloc(pd->system->realloc);
 
-		fx_planes_init();
+		s_effects[kFxPlanes] = fx_planes_init();
+		s_effects[kFxStarfield] = fx_starfield_init();
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);
@@ -37,19 +54,31 @@ static int update(void* userdata)
 
 	PDButtons btCur, btPushed, btRel;
 	pd->system->getButtonState(&btCur, &btPushed, &btRel);
+	if (btPushed & kButtonB) {
+		s_cur_effect--;
+		if (s_cur_effect < 0)
+			s_cur_effect = kFxCount-1;
+	}
+	if (btPushed & kButtonA) {
+		s_cur_effect++;
+		if (s_cur_effect >= kFxCount)
+			s_cur_effect = 0;
+	}
 
 	pd->graphics->clear(kColorWhite);
 
 	int dbg_value = 0;
-	dbg_value = fx_planes_update(btCur, pd->system->getCrankAngle(), pd->system->getElapsedTime(), pd->graphics->getFrame(), LCD_ROWSIZE);
+	dbg_value = s_effects[s_cur_effect].update(btCur, pd->system->getCrankAngle(), pd->system->getElapsedTime(), pd->graphics->getFrame(), LCD_ROWSIZE);
 
 	pd->graphics->fillRect(0, 0, 30, 32, kColorWhite);
 
 	char buf[100];
-	buf[0] = dbg_value / 100 % 10 + '0';
-	buf[1] = dbg_value / 10 % 10 + '0';
-	buf[2] = dbg_value / 1 % 10 + '0';
-	buf[3] = 0;
+	buf[0] = dbg_value / 10000 % 10 + '0';
+	buf[1] = dbg_value / 1000 % 10 + '0';
+	buf[2] = dbg_value / 100 % 10 + '0';
+	buf[3] = dbg_value / 10 % 10 + '0';
+	buf[4] = dbg_value / 1 % 10 + '0';
+	buf[5] = 0;
 	pd->graphics->setFont(font);
 	pd->graphics->drawText(buf, strlen(buf), kASCIIEncoding, 0, 16);
 

@@ -34,8 +34,9 @@ set (DEMO_SOURCES
 	src/main.c
 	src/mathlib.c
 	src/mathlib.h
+	src/effects/fx.h
 	src/effects/fx_planes.c
-	src/effects/fx_planes.h
+	src/effects/fx_starfield.c
 	src/mini3d/mini3d.c
 	src/mini3d/mini3d.h
 	src/mini3d/render.c
