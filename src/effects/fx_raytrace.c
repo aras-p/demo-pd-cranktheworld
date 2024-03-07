@@ -70,21 +70,36 @@ static int hit_sphere(const Ray* r, const Sphere* s, float tMin, float tMax, Hit
 		float discrSq = sqrtf(discr);
 
 		float t = (-b - discrSq);
-		if (t < tMax && t > tMin)
+		if (t <= tMin || t >= tMax)
 		{
-			outHit->pos = ray_pointat(r, t);
-			outHit->normal = v3_mulfl(v3_sub(outHit->pos, s->center), s->invRadius);
-			outHit->t = t;
-			return 1;
+			t = (-b + discrSq);
+			if (t <= tMin || t >= tMax)
+				return 0;
 		}
-		t = (-b + discrSq);
-		if (t < tMax && t > tMin)
-		{
-			outHit->pos = ray_pointat(r, t);
-			outHit->normal = v3_mulfl(v3_sub(outHit->pos, s->center), s->invRadius);
-			outHit->t = t;
-			return 1;
-		}
+		outHit->pos = ray_pointat(r, t);
+		outHit->normal = v3_mulfl(v3_sub(outHit->pos, s->center), s->invRadius);
+		outHit->t = t;
+		return 1;
+	}
+	return 0;
+}
+
+static int hit_ground(const Ray* r, float tMin, float tMax, Hit* outHit)
+{
+	// b = dot(plane->normal, r->dir), our normal is (0,1,0)
+	float b = r->dir.y;
+	if (b == 0.0f)
+		return 0;
+
+	// a = dot(plane->normal, r->orig) + plane->distance
+	float a = r->orig.y;
+	float t = -a / b;
+	if (t < tMax && t > tMin)
+	{
+		outHit->pos = ray_pointat(r, t);
+		outHit->normal = (float3){0,1,0};
+		outHit->t = t;
+		return 1;
 	}
 	return 0;
 }
@@ -93,10 +108,9 @@ static Camera s_camera;
 
 static Sphere s_Spheres[] =
 {
-	{{0,-100.5,-1}, 100},
-	{{2,0,-1}, 0.5f},
-	{{0,0,-1}, 0.5f},
-	{{-2,0,-1}, 0.5f},
+	{{3,1,0}, 1},
+	{{0,1,0}, 1},
+	{{-3,1,0}, 1},
 	//{{2,0,1}, 0.5f},
 	//{{0,0,1}, 0.5f},
 	//{{-2,0,1}, 0.5f},
@@ -121,8 +135,15 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 			anything = 1;
 			closest = tmpHit.t;
 			*outHit = tmpHit;
-			*outID = i;
+			*outID = i + 1;
 		}
+	}
+	if (hit_ground(r, tMin, closest, &tmpHit))
+	{
+		anything = 1;
+		closest = tmpHit.t;
+		*outHit = tmpHit;
+		*outID = 0;
 	}
 	return anything;
 }
@@ -133,6 +154,12 @@ static float trace_ray(const Ray* ray)
 	int id = 0;
 	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
 	{
+		if (id == 0) {
+			int gx = rec.pos.x;
+			int gy = rec.pos.z;
+			int val = (gx ^ gy) >> 2;
+			return val & 1 ? 0.2f : 0.8f;
+		}
 		return (id & 3) * 0.2f;
 	}
 	else
@@ -143,6 +170,12 @@ static float trace_ray(const Ray* ray)
 
 static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
+	float cangle = crank_angle * M_PIf / 180.0f;
+	float cs = cosf(cangle);
+	float ss = sinf(cangle);
+	float dist = 5.0f;
+	camera_init(&s_camera, (float3) { ss * dist, 2.3f, cs * dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
+
 	for (int i = 0; i < kSphereCount; ++i) {
 		sphere_update(&s_Spheres[i]);
 	}
@@ -168,19 +201,19 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 
 			// output 2x2 block of pixels
 			int test = g_blue_noise[pix_idx];
-			if (val < test) {
+			if (val <= test) {
 				put_pixel_black(row1, px);
 			}
 			test = g_blue_noise[pix_idx + 1];
-			if (val < test) {
+			if (val <= test) {
 				put_pixel_black(row1, px + 1);
 			}
 			test = g_blue_noise[pix_idx + LCD_COLUMNS];
-			if (val < test) {
+			if (val <= test) {
 				put_pixel_black(row2, px);
 			}
 			test = g_blue_noise[pix_idx + LCD_COLUMNS + 1];
-			if (val < test) {
+			if (val <= test) {
 				put_pixel_black(row2, px + 1);
 			}
 		}
@@ -191,6 +224,5 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 
 Effect fx_raytrace_init(void* pd_api)
 {
-	camera_init(&s_camera, (float3) { 0, 2, 3 }, (float3) { 0, 0, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
 	return (Effect) {fx_raytrace_update};
 }
