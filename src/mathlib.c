@@ -85,7 +85,7 @@ float3 mtx_transform_pt(const xform *m, float3 p)
 	return (float3) { x, y, z };
 }
 
-float3 Vector3D_normalize(float3 v)
+float3 v3_normalize(float3 v)
 {
 	float d = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
 	
@@ -98,7 +98,7 @@ float3 v3_tri_normal(const float3* p1, const float3* p2, const float3* p3)
 		(float3) { p2->x - p1->x, p2->y - p1->y, p2->z - p1->z },
 		(float3) { p3->x - p1->x, p3->y - p1->y, p3->z - p1->z });
 
-	return Vector3D_normalize(v);
+	return v3_normalize(v);
 }
 
 float mtx_get_determinant(xform* m)

@@ -12,18 +12,20 @@ typedef enum
 	kFxPlasma,
 	kFxBlobs,
 	kFxMoire,
+	kFxRaytrace,
 	kFxCount,
 } EffectType;
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = kFxMoire;
+static EffectType s_cur_effect = kFxRaytrace;
 
 Effect fx_planes_init(void* pd_api);
 Effect fx_starfield_init(void* pd_api);
 Effect fx_plasma_init(void* pd_api);
 Effect fx_blobs_init(void* pd_api);
 Effect fx_moire_init(void* pd_api);
+Effect fx_raytrace_init(void* pd_api);
 
 
 static int update(void* userdata);
@@ -52,6 +54,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		s_effects[kFxPlasma] = fx_plasma_init(pd);
 		s_effects[kFxBlobs] = fx_blobs_init(pd);
 		s_effects[kFxMoire] = fx_moire_init(pd);
+		s_effects[kFxRaytrace] = fx_raytrace_init(pd);
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);

@@ -59,6 +59,8 @@ static inline float v3_dot(float3 a, float3 b)
 
 float3 v3_tri_normal(const float3* p1, const float3* p2, const float3* p3);
 
+float3 v3_normalize(float3 v);
+
 static inline float v3_lensq(float3* v)
 {
 	return v->x * v->x + v->y * v->y + v->z * v->z;
@@ -72,6 +74,23 @@ static inline float v3_len(float3* v)
 static inline float3 v3_add(float3 a, float3 v)
 {
 	return (float3) { a.x + v.x, a.y + v.y, a.z + v.z };
+}
+static inline float3 v3_sub(float3 a, float3 v)
+{
+	return (float3) { a.x - v.x, a.y - v.y, a.z - v.z };
+}
+static inline float3 v3_mul(float3 a, float3 v)
+{
+	return (float3) { a.x * v.x, a.y * v.y, a.z * v.z };
+}
+static inline float3 v3_mulfl(float3 v, float s)
+{
+	return (float3) { v.x*s, v.y*s, v.z*s };
+}
+
+static inline float3 v3_reflect(float3 v, float3 n)
+{
+	return v3_sub(v, v3_mulfl(n, 2 * v3_dot(v, n)));
 }
 
 typedef struct xform
