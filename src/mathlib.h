@@ -14,6 +14,18 @@ static inline float _lib3d_sqrtf(float x)
 #define sqrtf(f) _lib3d_sqrtf(f)
 #endif
 
+static inline uint32_t swap(uint32_t n)
+{
+#if TARGET_PLAYDATE
+	//return __REV(n);
+	uint32_t result;
+	__asm volatile ("rev %0, %1" : "=l" (result) : "l" (n));
+	return(result);
+#else
+	return ((n & 0xff000000) >> 24) | ((n & 0xff0000) >> 8) | ((n & 0xff00) << 8) | (n << 24);
+#endif
+}
+
 #if !defined(MIN)
 #define MIN(a, b) (((a)<(b))?(a):(b))
 #endif

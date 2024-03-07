@@ -146,8 +146,8 @@ static float trace_refl_ray(const Ray* ray)
 	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
 	{
 		if (id < 0) {
-			int gx = rec.pos.x;
-			int gy = rec.pos.z;
+			int gx = (int)rec.pos.x;
+			int gy = (int)rec.pos.z;
 			int val = (gx ^ gy) >> 1;
 			return val & 1 ? 0.1f : 0.9f;
 		}
@@ -166,8 +166,8 @@ static float trace_ray(const Ray* ray)
 	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
 	{
 		if (id < 0) {
-			int gx = rec.pos.x;
-			int gy = rec.pos.z;
+			int gx = (int)rec.pos.x;
+			int gy = (int)rec.pos.z;
 			int val = ((gx ^ gy) >> 1) & 1;
 			return val ? 0.1f : 0.9f;
 		}

@@ -13,19 +13,6 @@
 #define LCD_ROWS 240
 #define LCD_COLUMNS 400
 
-static inline uint32_t swap(uint32_t n)
-{
-#if TARGET_PLAYDATE
-	//return __REV(n);
-	uint32_t result;
-	
-	__asm volatile ("rev %0, %1" : "=l" (result) : "l" (n));
-	return(result);
-#else
-	return ((n & 0xff000000) >> 24) | ((n & 0xff0000) >> 8) | ((n & 0xff00) << 8) | (n << 24);
-#endif
-}
-
 static inline void
 _drawMaskPattern(uint32_t* p, uint32_t mask, uint32_t color)
 {
