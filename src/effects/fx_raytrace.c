@@ -190,43 +190,30 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	float dist = 4.0f;
 	camera_init(&s_camera, (float3) { ss * dist, 2.3f, cs * dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
 
+	// trace one ray per 2x2 pixel block
 	float dv = 2.0f / LCD_ROWS;
 	float du = 2.0f / LCD_COLUMNS;
 	float vv = 1.0f;
 	Ray camRay;
 	camRay.orig = s_camera.origin;
+
+	uint8_t scanline[LCD_COLUMNS];
 	for (int py = 0; py < LCD_ROWS; py += 2, vv -= dv)
 	{
 		float uu = 0.0f;
-		uint8_t* row1 = framebuffer + py * framebuffer_stride;
-		uint8_t* row2 = row1 + framebuffer_stride;
-		int pix_idx = py * LCD_COLUMNS;
-
-		for (int px = 0; px < LCD_COLUMNS; px += 2, uu += du, pix_idx += 2)
+		for (int px = 0; px < LCD_COLUMNS; px += 2, uu += du)
 		{
 			float3 rdir = v3_add(s_camera.lowerLeftCorner, v3_add(v3_mulfl(s_camera.horizontal, uu), v3_mulfl(s_camera.vertical, vv)));
 			camRay.dir = v3_normalize(v3_sub(rdir, s_camera.origin));
 
 			int val = (int)(trace_ray(&camRay) * 255);
-
-			// output 2x2 block of pixels
-			int test = g_blue_noise[pix_idx];
-			if (val <= test) {
-				put_pixel_black(row1, px);
-			}
-			test = g_blue_noise[pix_idx + 1];
-			if (val <= test) {
-				put_pixel_black(row1, px + 1);
-			}
-			test = g_blue_noise[pix_idx + LCD_COLUMNS];
-			if (val <= test) {
-				put_pixel_black(row2, px);
-			}
-			test = g_blue_noise[pix_idx + LCD_COLUMNS + 1];
-			if (val <= test) {
-				put_pixel_black(row2, px + 1);
-			}
+			scanline[px] = val;
+			scanline[px + 1] = val;
 		}
+
+		// dither and draw two scanlines
+		draw_dithered_scanline(scanline, py, 0, framebuffer);
+		draw_dithered_scanline(scanline, py + 1, 0, framebuffer);
 	}
 
 	return kSphereCount;

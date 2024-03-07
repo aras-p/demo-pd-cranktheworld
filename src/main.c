@@ -19,7 +19,7 @@ typedef enum
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = kFxKefren;
+static EffectType s_cur_effect = kFxRaytrace;
 
 Effect fx_planes_init(void* pd_api);
 Effect fx_starfield_init(void* pd_api);

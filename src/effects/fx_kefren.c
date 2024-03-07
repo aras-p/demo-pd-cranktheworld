@@ -29,8 +29,6 @@ static int fx_kefren_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 	uint8_t bar_line[LCD_ROWSIZE * 8];
 	memset(bar_line, 0xFF, sizeof(bar_line));
 
-	uint8_t scanline[LCD_ROWSIZE];
-
 	const float kSinStep1 = 0.093f;
 	const float kSinStep2 = -0.063f;
 
@@ -50,21 +48,8 @@ static int fx_kefren_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 			}
 		}
 
-		// dither the scanline
-		const uint8_t* noise_row = g_blue_noise + py * LCD_COLUMNS;
-		int px = 0;
-		for (int bx = 0; bx < LCD_COLUMNS/8; ++bx) {
-			uint8_t pixbyte = 0xFF;
-			for (int ib = 0; ib < 8; ++ib, ++px) {
-				if (bar_line[px] < noise_row[px] + 50 - (LCD_ROWS-py)/2) {
-					pixbyte &= ~(1<<(7-ib));
-				}
-			}
-			scanline[bx] = pixbyte;
-		}
-
-		uint8_t* row = framebuffer + py * framebuffer_stride;
-		memcpy(row, scanline, sizeof(scanline));
+		int dither_bias = 50 - (LCD_ROWS - py) / 2; // fade to white near top, more black at bottom
+		draw_dithered_scanline(bar_line, py, dither_bias, framebuffer);
 	}
 	return s_bar_count;
 }
