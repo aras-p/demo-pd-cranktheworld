@@ -40,18 +40,6 @@ static void camera_init(Camera* cam, float3 lookFrom, float3 lookAt, float3 vup,
 	cam->vertical = v3_mulfl(cam->v, 2 * halfHeight * focusDist);
 }
 
-typedef struct Sphere
-{
-	float3 center;
-	float radius;
-	float invRadius;
-} Sphere;
-
-static void sphere_update(Sphere* s)
-{
-	s->invRadius = 1.0f / s->radius;
-}
-
 typedef struct Hit
 {
 	float3 pos;
@@ -59,11 +47,11 @@ typedef struct Hit
 	float t;
 } Hit;
 
-static int hit_sphere(const Ray* r, const Sphere* s, float tMin, float tMax, Hit* outHit)
+static int hit_unit_sphere(const Ray* r, const float3* pos, float tMin, float tMax, Hit* outHit)
 {
-	float3 oc = v3_sub(r->orig, s->center);
+	float3 oc = v3_sub(r->orig, *pos);
 	float b = v3_dot(oc, r->dir);
-	float c = v3_dot(oc, oc) - s->radius * s->radius;
+	float c = v3_dot(oc, oc) - 1;
 	float discr = b * b - c;
 	if (discr > 0)
 	{
@@ -77,7 +65,7 @@ static int hit_sphere(const Ray* r, const Sphere* s, float tMin, float tMax, Hit
 				return 0;
 		}
 		outHit->pos = ray_pointat(r, t);
-		outHit->normal = v3_mulfl(v3_sub(outHit->pos, s->center), s->invRadius);
+		outHit->normal = v3_sub(outHit->pos, *pos);
 		outHit->t = t;
 		return 1;
 	}
@@ -96,26 +84,29 @@ static int hit_ground(const Ray* r, float tMin, float tMax, Hit* outHit)
 	float t = -a / b;
 	if (t < tMax && t > tMin)
 	{
-		outHit->pos = ray_pointat(r, t);
-		outHit->normal = (float3){0,1,0};
-		outHit->t = t;
-		return 1;
+		float3 pos = ray_pointat(r, t);
+		if (fabsf(pos.x) < 20.0f && fabsf(pos.z) < 20.0f)
+		{
+			outHit->pos = pos;
+			outHit->normal = (float3){ 0,1,0 };
+			outHit->t = t;
+			return 1;
+		}
 	}
 	return 0;
 }
 
 static Camera s_camera;
 
-static Sphere s_Spheres[] =
+static float3 s_Spheres[] =
 {
-	{{3,1,0}, 1},
-	{{0,1,0}, 1},
-	{{-3,1,0}, 1},
-	//{{2,0,1}, 0.5f},
-	//{{0,0,1}, 0.5f},
-	//{{-2,0,1}, 0.5f},
-	//{{0.5f,1,0.5f}, 0.5f},
-	//{{-1.5f,1.5f,0.f}, 0.3f},
+	{2.5f,1,0},
+	{0,1,0},
+	{-2.5f,1,0},
+};
+static float s_SphereCols[] =
+{
+	0.3f, 0.6f, 0.9f,
 };
 static const int kSphereCount = sizeof(s_Spheres) / sizeof(s_Spheres[0]);
 
@@ -130,12 +121,12 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 	float closest = tMax;
 	for (int i = 0; i < kSphereCount; ++i)
 	{
-		if (hit_sphere(r, &s_Spheres[i], tMin, closest, &tmpHit))
+		if (hit_unit_sphere(r, &s_Spheres[i], tMin, closest, &tmpHit))
 		{
 			anything = 1;
 			closest = tmpHit.t;
 			*outHit = tmpHit;
-			*outID = i + 1;
+			*outID = i;
 		}
 	}
 	if (hit_ground(r, tMin, closest, &tmpHit))
@@ -143,9 +134,29 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 		anything = 1;
 		closest = tmpHit.t;
 		*outHit = tmpHit;
-		*outID = 0;
+		*outID = -1;
 	}
 	return anything;
+}
+
+static float trace_refl_ray(const Ray* ray)
+{
+	Hit rec;
+	int id = 0;
+	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
+	{
+		if (id < 0) {
+			int gx = rec.pos.x;
+			int gy = rec.pos.z;
+			int val = (gx ^ gy) >> 1;
+			return val & 1 ? 0.1f : 0.9f;
+		}
+		return s_SphereCols[id];
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 static float trace_ray(const Ray* ray)
@@ -154,13 +165,16 @@ static float trace_ray(const Ray* ray)
 	int id = 0;
 	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
 	{
-		if (id == 0) {
+		if (id < 0) {
 			int gx = rec.pos.x;
 			int gy = rec.pos.z;
-			int val = (gx ^ gy) >> 2;
-			return val & 1 ? 0.2f : 0.8f;
+			int val = ((gx ^ gy) >> 1) & 1;
+			return val ? 0.1f : 0.9f;
 		}
-		return (id & 3) * 0.2f;
+		Ray refl_ray;
+		refl_ray.orig = rec.pos;
+		refl_ray.dir = v3_reflect(ray->dir, rec.normal);
+		return trace_refl_ray(&refl_ray) * s_SphereCols[id];
 	}
 	else
 	{
@@ -173,12 +187,8 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	float cangle = crank_angle * M_PIf / 180.0f;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
-	float dist = 5.0f;
+	float dist = 4.0f;
 	camera_init(&s_camera, (float3) { ss * dist, 2.3f, cs * dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
-
-	for (int i = 0; i < kSphereCount; ++i) {
-		sphere_update(&s_Spheres[i]);
-	}
 
 	float dv = 2.0f / LCD_ROWS;
 	float du = 2.0f / LCD_COLUMNS;
