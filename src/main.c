@@ -33,6 +33,9 @@ static int update(void* userdata);
 const char* fontpath = "/System/Fonts/Roobert-10-Bold.pft";
 LCDFont* font = NULL;
 
+//static const char* kMusicPath = "Music.mp3";
+//static FilePlayer* s_music;
+
 #ifdef _WINDLL
 __declspec(dllexport)
 #endif
@@ -44,6 +47,13 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		font = pd->graphics->loadFont(fontpath, &err);	
 		if (font == NULL)
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
+
+		//s_music = pd->sound->fileplayer->newPlayer();
+		//int music_ok = pd->sound->fileplayer->loadIntoPlayer(s_music, kMusicPath);
+		//if (!music_ok) {
+		//	pd->system->error("Could not load music file %s", kMusicPath);
+		//}
+		//pd->sound->fileplayer->play(s_music, 0);
 
 		pd_realloc = pd->system->realloc;
 
