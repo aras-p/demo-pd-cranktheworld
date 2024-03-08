@@ -44,6 +44,7 @@ set (DEMO_SOURCES
 	src/effects/fx_plasma.c
 	src/effects/fx_raytrace.c
 	src/effects/fx_starfield.c
+	src/effects/fx_voxel.c
 	src/mini3d/render.c
 	src/mini3d/render.h
 	src/mini3d/scene.c
