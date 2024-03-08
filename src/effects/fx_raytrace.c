@@ -102,9 +102,9 @@ static float3 s_Spheres[] =
 	{0,1,0},
 	{-2.5f,1,0},
 };
-static float s_SphereCols[] =
+static int s_SphereCols[] =
 {
-	0.3f, 0.6f, 0.9f,
+	75, 150, 225,
 };
 static const int kSphereCount = sizeof(s_Spheres) / sizeof(s_Spheres[0]);
 
@@ -135,7 +135,7 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 	return anything;
 }
 
-static float trace_refl_ray(const Ray* ray)
+static int trace_refl_ray(const Ray* ray)
 {
 	Hit rec;
 	int id = 0;
@@ -145,17 +145,17 @@ static float trace_refl_ray(const Ray* ray)
 			int gx = (int)rec.pos.x;
 			int gy = (int)rec.pos.z;
 			int val = (gx ^ gy) >> 1;
-			return val & 1 ? 0.1f : 0.9f;
+			return val & 1 ? 25 : 240;
 		}
 		return s_SphereCols[id];
 	}
 	else
 	{
-		return 1;
+		return 255;
 	}
 }
 
-static float trace_ray(const Ray* ray)
+static int trace_ray(const Ray* ray)
 {
 	Hit rec;
 	int id = 0;
@@ -165,16 +165,16 @@ static float trace_ray(const Ray* ray)
 			int gx = (int)rec.pos.x;
 			int gy = (int)rec.pos.z;
 			int val = ((gx ^ gy) >> 1) & 1;
-			return val ? 0.1f : 0.9f;
+			return val ? 25 : 240;
 		}
 		Ray refl_ray;
 		refl_ray.orig = rec.pos;
 		refl_ray.dir = v3_reflect(ray->dir, rec.normal);
-		return trace_refl_ray(&refl_ray) * s_SphereCols[id];
+		return (trace_refl_ray(&refl_ray) * s_SphereCols[id]) >> 8;
 	}
 	else
 	{
-		return 1;
+		return 255;
 	}
 }
 
@@ -198,12 +198,16 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	{
 		float uu = du * 0.5f;
 		int prev_val = -1;
+
+		float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
+		rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
+
 		for (int px = 0; px < LCD_COLUMNS; px += 2, uu += du)
 		{
-			float3 rdir = v3_add(s_camera.lowerLeftCorner, v3_add(v3_mulfl(s_camera.horizontal, uu), v3_mulfl(s_camera.vertical, vv)));
-			camRay.dir = v3_normalize(v3_sub(rdir, s_camera.origin));
+			float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
+			camRay.dir = v3_normalize(rdir);
 
-			int val = (int)(trace_ray(&camRay) * 255);
+			int val = trace_ray(&camRay);
 
 			// for the horizontal two pixels, put (average of cur+prev, cur)
 			if (prev_val < 0)
