@@ -91,7 +91,7 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 		float dy = (pry - ply) * inv_columns ;
 		plx += s_camera.pos.x;
 		ply += s_camera.pos.z;
-		float invz = 1.0f / z * 100.0f;
+		float invz = 70.0f / z;
 		for (int x = 0; x < LCD_COLUMNS; x++) {
 			int tex_index = ((((int)ply) & HEIGHTMAP_MASK) << HEIGHTMAP_SHIFT) + (((int)plx) & HEIGHTMAP_MASK);
 			int screen_y = (int)((cam_height - s_heightmap[tex_index]) * invz + s_camera.horizon);
