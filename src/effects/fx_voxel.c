@@ -80,10 +80,12 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	for (float z = 1.0f; z < s_camera.distance; z += deltaz)
 	{
 		// camera uses 90 degree FOV
-		float plx = -cam_cos * z - cam_sin * z;
-		float ply = cam_sin * z - cam_cos * z;
-		float prx = cam_cos * z - cam_sin * z;
-		float pry = -cam_sin * z - cam_cos * z;
+		float zcos = cam_cos * z;
+		float zsin = cam_sin * z;
+		float plx = -zcos - zsin;
+		float ply = zsin - zcos;
+		float prx = zcos - zsin;
+		float pry = -zsin - zcos;
 
 		float dx = (prx - plx) * inv_columns;
 		float dy = (pry - ply) * inv_columns ;
@@ -94,10 +96,16 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 			int tex_index = ((((int)ply) & HEIGHTMAP_MASK) << HEIGHTMAP_SHIFT) + (((int)plx) & HEIGHTMAP_MASK);
 			int screen_y = (int)((cam_height - s_heightmap[tex_index]) * invz + s_camera.horizon);
 			if (screen_y < 0) screen_y = 0;
-			for (int y = screen_y; y < occlusion[x]; ++y) {
-				s_buffer[y * LCD_COLUMNS + x] = s_heightmap_color[tex_index]; // (uint8_t)(z * 2);
-			}
-			if (screen_y < occlusion[x]) {
+
+			int occ_y = occlusion[x];
+			if (screen_y < occ_y) {
+				uint8_t col = s_heightmap_color[tex_index];
+				int buf_idx = screen_y * LCD_COLUMNS + x;
+				for (int y = screen_y; y < occ_y; ++y)
+				{
+					s_buffer[buf_idx] = col;
+					buf_idx += LCD_COLUMNS;
+				}
 				occlusion[x] = screen_y;
 			}
 			plx += dx;
