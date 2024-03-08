@@ -192,35 +192,26 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	Ray camRay;
 	camRay.orig = s_camera.origin;
 
-	uint8_t scanline[LCD_COLUMNS];
 	float vv = 1.0f - dv * 0.5f;
-	for (int py = 0; py < LCD_ROWS; py += 2, vv -= dv)
+	int pix_idx = 0;
+	for (int py = 0; py < LCD_ROWS / 2; ++py, vv -= dv)
 	{
 		float uu = du * 0.5f;
-		int prev_val = -1;
 
 		float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
 		rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
 
-		for (int px = 0; px < LCD_COLUMNS; px += 2, uu += du)
+		for (int px = 0; px < LCD_COLUMNS / 2; ++px, uu += du, ++pix_idx)
 		{
 			float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
 			camRay.dir = v3_normalize(rdir);
 
 			int val = trace_ray(&camRay);
-
-			// for the horizontal two pixels, put (average of cur+prev, cur)
-			if (prev_val < 0)
-				prev_val = val;
-			scanline[px] = (prev_val + val) >> 1;
-			scanline[px + 1] = val;
-			prev_val = val;
+			g_screen_buffer[pix_idx] = val;
 		}
-
-		// dither and draw two scanlines
-		draw_dithered_scanline(scanline, py, 0, framebuffer);
-		draw_dithered_scanline(scanline, py + 1, 0, framebuffer);
 	}
+
+	draw_dithered_screen_2x2(framebuffer, 1);
 
 	return kSphereCount;
 }
