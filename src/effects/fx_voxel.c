@@ -12,8 +12,6 @@
 static uint8_t* s_heightmap;
 static uint8_t* s_heightmap_color;
 
-static uint8_t s_buffer[LCD_COLUMNS * LCD_ROWS];
-
 static void init_heightmap(void* pd_api)
 {
 	int img_w, img_h;
@@ -71,7 +69,7 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	int occlusion[LCD_COLUMNS];
 	for (int i = 0; i < LCD_COLUMNS; ++i)
 		occlusion[i] = LCD_ROWS;
-	memset(s_buffer, 0xFF, sizeof(s_buffer));
+	memset(g_screen_buffer, 0xFF, LCD_COLUMNS * LCD_ROWS);
 
 	float deltaz = 1.0f;
 	const float inv_columns = 1.0f / LCD_COLUMNS;
@@ -103,7 +101,7 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 				int buf_idx = screen_y * LCD_COLUMNS + x;
 				for (int y = screen_y; y < occ_y; ++y)
 				{
-					s_buffer[buf_idx] = col;
+					g_screen_buffer[buf_idx] = col;
 					buf_idx += LCD_COLUMNS;
 				}
 				occlusion[x] = screen_y;
@@ -115,7 +113,7 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	}
 
 	for (int y = 0; y < LCD_ROWS; ++y) {
-		draw_dithered_scanline(&s_buffer[y * LCD_COLUMNS], y, 0, framebuffer);
+		draw_dithered_scanline(&g_screen_buffer[y * LCD_COLUMNS], y, 0, framebuffer);
 	}
 	return 0;
 }

@@ -72,7 +72,7 @@ static int hit_unit_sphere(const Ray* r, const float3* pos, float tMin, float tM
 	return 0;
 }
 
-static int hit_ground(const Ray* r, float tMin, float tMax, Hit* outHit)
+static int hit_ground(const Ray* r, float tMin, float tMax, float3* outPos)
 {
 	// b = dot(plane->normal, r->dir), our normal is (0,1,0)
 	float b = r->dir.y;
@@ -87,9 +87,7 @@ static int hit_ground(const Ray* r, float tMin, float tMax, Hit* outHit)
 		float3 pos = ray_pointat(r, t);
 		if (fabsf(pos.x) < 20.0f && fabsf(pos.z) < 20.0f)
 		{
-			outHit->pos = pos;
-			outHit->normal = (float3){ 0,1,0 };
-			outHit->t = t;
+			*outPos = pos;
 			return 1;
 		}
 	}
@@ -129,11 +127,9 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 			*outID = i;
 		}
 	}
-	if (hit_ground(r, tMin, closest, &tmpHit))
+	if (!anything && hit_ground(r, tMin, closest, &outHit->pos))
 	{
 		anything = 1;
-		closest = tmpHit.t;
-		*outHit = tmpHit;
 		*outID = -1;
 	}
 	return anything;
@@ -184,7 +180,7 @@ static float trace_ray(const Ray* ray)
 
 static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
-	float cangle = crank_angle * M_PIf / 180.0f;
+	float cangle = (crank_angle + 68) * M_PIf / 180.0f;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
 	float dist = 4.0f;
@@ -193,22 +189,28 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	// trace one ray per 2x2 pixel block
 	float dv = 2.0f / LCD_ROWS;
 	float du = 2.0f / LCD_COLUMNS;
-	float vv = 1.0f;
 	Ray camRay;
 	camRay.orig = s_camera.origin;
 
 	uint8_t scanline[LCD_COLUMNS];
+	float vv = 1.0f - dv * 0.5f;
 	for (int py = 0; py < LCD_ROWS; py += 2, vv -= dv)
 	{
-		float uu = 0.0f;
+		float uu = du * 0.5f;
+		int prev_val = -1;
 		for (int px = 0; px < LCD_COLUMNS; px += 2, uu += du)
 		{
 			float3 rdir = v3_add(s_camera.lowerLeftCorner, v3_add(v3_mulfl(s_camera.horizontal, uu), v3_mulfl(s_camera.vertical, vv)));
 			camRay.dir = v3_normalize(v3_sub(rdir, s_camera.origin));
 
 			int val = (int)(trace_ray(&camRay) * 255);
-			scanline[px] = val;
+
+			// for the horizontal two pixels, put (average of cur+prev, cur)
+			if (prev_val < 0)
+				prev_val = val;
+			scanline[px] = (prev_val + val) >> 1;
 			scanline[px + 1] = val;
+			prev_val = val;
 		}
 
 		// dither and draw two scanlines

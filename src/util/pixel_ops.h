@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 extern uint8_t* g_blue_noise;
+extern uint8_t g_screen_buffer[];
 
 void init_blue_noise(void* pd_api);
 

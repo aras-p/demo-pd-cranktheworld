@@ -9,6 +9,8 @@
 
 uint8_t* g_blue_noise;
 
+uint8_t g_screen_buffer[LCD_COLUMNS * LCD_ROWS];
+
 void init_blue_noise(void* pd_api)
 {
 	int bn_w, bn_h;
