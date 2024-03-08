@@ -4,6 +4,11 @@
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
+#include <stdlib.h>
+
+#define kMinT (0.001f)
+#define kMaxT (1.0e3f)
+
 typedef struct Ray {
 	float3 orig;
 	float3 dir;
@@ -47,7 +52,7 @@ typedef struct Hit
 	float t;
 } Hit;
 
-static int hit_unit_sphere(const Ray* r, const float3* pos, float tMin, float tMax, Hit* outHit)
+static int hit_unit_sphere(const Ray* r, const float3* pos, float tMax, Hit* outHit)
 {
 	float3 oc = v3_sub(r->orig, *pos);
 	float b = v3_dot(oc, r->dir);
@@ -58,10 +63,10 @@ static int hit_unit_sphere(const Ray* r, const float3* pos, float tMin, float tM
 		float discrSq = sqrtf(discr);
 
 		float t = (-b - discrSq);
-		if (t <= tMin || t >= tMax)
+		if (t <= kMinT || t >= tMax)
 		{
 			t = (-b + discrSq);
-			if (t <= tMin || t >= tMax)
+			if (t <= kMinT || t >= tMax)
 				return 0;
 		}
 		outHit->pos = ray_pointat(r, t);
@@ -72,17 +77,17 @@ static int hit_unit_sphere(const Ray* r, const float3* pos, float tMin, float tM
 	return 0;
 }
 
-static int hit_ground(const Ray* r, float tMin, float tMax, float3* outPos)
+static int hit_ground(const Ray* r, float tMax, float3* outPos)
 {
 	// b = dot(plane->normal, r->dir), our normal is (0,1,0)
 	float b = r->dir.y;
-	if (b == 0.0f)
+	if (b >= 0.0f)
 		return 0;
 
 	// a = dot(plane->normal, r->orig) + plane->distance
 	float a = r->orig.y;
 	float t = -a / b;
-	if (t < tMax && t > tMin)
+	if (t < tMax && t > kMinT)
 	{
 		float3 pos = ray_pointat(r, t);
 		if (fabsf(pos.x) < 20.0f && fabsf(pos.z) < 20.0f)
@@ -102,24 +107,28 @@ static float3 s_Spheres[] =
 	{0,1,0},
 	{-2.5f,1,0},
 };
-static int s_SphereCols[] =
+#define kSphereCount (sizeof(s_Spheres) / sizeof(s_Spheres[0]))
+static int s_SphereCols[kSphereCount] =
 {
 	75, 150, 225,
 };
-static const int kSphereCount = sizeof(s_Spheres) / sizeof(s_Spheres[0]);
 
-const float kMinT = 0.001f;
-const float kMaxT = 1.0e7f;
-const int kMaxDepth = 10;
+typedef struct SphereOrder {
+	float dist;
+	int index;
+} SphereOrder;
+static SphereOrder s_SphereOrder[kSphereCount];
 
-static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* outID)
+static int hit_world_refl(const Ray* r, Hit* outHit, int* outID, int skip_sphere)
 {
 	Hit tmpHit;
 	int anything = 0;
-	float closest = tMax;
+	float closest = kMaxT;
 	for (int i = 0; i < kSphereCount; ++i)
 	{
-		if (hit_unit_sphere(r, &s_Spheres[i], tMin, closest, &tmpHit))
+		if (i == skip_sphere)
+			continue;
+		if (hit_unit_sphere(r, &s_Spheres[i], closest, &tmpHit))
 		{
 			anything = 1;
 			closest = tmpHit.t;
@@ -127,7 +136,7 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 			*outID = i;
 		}
 	}
-	if (!anything && hit_ground(r, tMin, closest, &outHit->pos))
+	if (!anything && hit_ground(r, closest, &outHit->pos))
 	{
 		anything = 1;
 		*outID = -1;
@@ -135,11 +144,30 @@ static int hit_world(const Ray* r, float tMin, float tMax, Hit* outHit, int* out
 	return anything;
 }
 
-static int trace_refl_ray(const Ray* ray)
+static int hit_world_primary(const Ray* r, Hit* outHit, int* outID)
+{
+	for (int ii = 0; ii < kSphereCount; ++ii)
+	{
+		int si = s_SphereOrder[ii].index;
+		if (hit_unit_sphere(r, &s_Spheres[si], kMaxT, outHit))
+		{
+			*outID = si;
+			return 1;
+		}
+	}
+	if (hit_ground(r, kMaxT, &outHit->pos))
+	{
+		*outID = -1;
+		return 1;
+	}
+	return 0;
+}
+
+static int trace_refl_ray(const Ray* ray, int parent_id)
 {
 	Hit rec;
 	int id = 0;
-	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
+	if (hit_world_refl(ray, &rec, &id, parent_id))
 	{
 		if (id < 0) {
 			int gx = (int)rec.pos.x;
@@ -159,7 +187,7 @@ static int trace_ray(const Ray* ray)
 {
 	Hit rec;
 	int id = 0;
-	if (hit_world(ray, kMinT, kMaxT, &rec, &id))
+	if (hit_world_primary(ray, &rec, &id))
 	{
 		if (id < 0) {
 			int gx = (int)rec.pos.x;
@@ -170,13 +198,25 @@ static int trace_ray(const Ray* ray)
 		Ray refl_ray;
 		refl_ray.orig = rec.pos;
 		refl_ray.dir = v3_reflect(ray->dir, rec.normal);
-		return (trace_refl_ray(&refl_ray) * s_SphereCols[id]) >> 8;
+		return (trace_refl_ray(&refl_ray, id) * s_SphereCols[id]) >> 8;
 	}
 	else
 	{
 		return 255;
 	}
 }
+
+static int CompareSphereDist(const void* a, const void* b)
+{
+	const SphereOrder* oa = (const SphereOrder*)a;
+	const SphereOrder* ob = (const SphereOrder*)b;
+	if (oa->dist < ob->dist)
+		return -1;
+	if (oa->dist > ob->dist)
+		return 1;
+	return 0;
+}
+
 
 static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
@@ -185,6 +225,15 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	float ss = sinf(cangle);
 	float dist = 4.0f;
 	camera_init(&s_camera, (float3) { ss * dist, 2.3f, cs * dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
+
+	// sort spheres by distance from camera, for primary rays
+	for (int i = 0; i < kSphereCount; ++i)
+	{
+		s_SphereOrder[i].index = i;
+		float3 vec = v3_sub(s_Spheres[i], s_camera.origin);
+		s_SphereOrder[i].dist = v3_lensq(&vec);
+	}
+	qsort(s_SphereOrder, kSphereCount, sizeof(s_SphereOrder[0]), CompareSphereDist);
 
 	// trace one ray per 2x2 pixel block
 	float dv = 2.0f / LCD_ROWS;

@@ -85,13 +85,6 @@ float3 mtx_transform_pt(const xform *m, float3 p)
 	return (float3) { x, y, z };
 }
 
-float3 v3_normalize(float3 v)
-{
-	float d = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-	
-	return (float3) { v.x / d, v.y / d, v.z / d };
-}
-
 float3 v3_tri_normal(const float3* p1, const float3* p2, const float3* p3)
 {
 	float3 v = v3_cross(

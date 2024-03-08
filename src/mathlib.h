@@ -71,7 +71,13 @@ static inline float v3_dot(float3 a, float3 b)
 
 float3 v3_tri_normal(const float3* p1, const float3* p2, const float3* p3);
 
-float3 v3_normalize(float3 v);
+static inline float3 v3_normalize(float3 v)
+{
+	float d = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+
+	return (float3) { v.x / d, v.y / d, v.z / d };
+}
+
 
 static inline float v3_lensq(float3* v)
 {
@@ -91,14 +97,21 @@ static inline float3 v3_sub(float3 a, float3 v)
 {
 	return (float3) { a.x - v.x, a.y - v.y, a.z - v.z };
 }
-static inline float3 v3_mul(float3 a, float3 v)
+static inline float3 v3_mul(float3 a, float3 b)
 {
-	return (float3) { a.x * v.x, a.y * v.y, a.z * v.z };
+	return (float3) { a.x * b.x, a.y * b.y, a.z * b.z };
 }
 static inline float3 v3_mulfl(float3 v, float s)
 {
 	return (float3) { v.x*s, v.y*s, v.z*s };
 }
+static inline float3 v3_lerp(float3 a, float3 b, float f)
+{
+	float ff = 1.0f - f;
+	float3 r = { a.x*ff + b.x*f, a.y*ff + b.y*f, a.z*ff + b.z*f };
+	return r;
+}
+
 
 static inline float3 v3_reflect(float3 v, float3 n)
 {
