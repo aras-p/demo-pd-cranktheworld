@@ -1414,3 +1414,29 @@ void xm_generate_samples(xm_context_t* ctx, float* output, size_t numsamples) {
 		xm_sample(ctx, output + (2 * i), output + (2 * i + 1));
 	}
 }
+
+void xm_generate_samples_16(xm_context_t* ctx, int16_t* output_l, int16_t* output_r, size_t numsamples)
+{
+	ctx->generated_samples += numsamples;
+
+	float sl, sr;
+	for (size_t i = 0; i < numsamples; i++) {
+		xm_sample(ctx, &sl, &sr);
+		*output_l = (int16_t)(sl * 32767.0f);
+		*output_r = (int16_t)(sr * 32767.0f);
+		++output_l;
+		++output_r;
+	}
+}
+
+void xm_generate_samples_16_mono(xm_context_t* ctx, int16_t* output, size_t numsamples)
+{
+	ctx->generated_samples += numsamples;
+
+	float sl, sr;
+	for (size_t i = 0; i < numsamples; i++) {
+		xm_sample(ctx, &sl, &sr);
+		*output = (int16_t)((sl + sr) * 16383.0f);
+		++output;
+	}
+}
