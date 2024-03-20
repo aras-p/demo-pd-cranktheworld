@@ -3,6 +3,7 @@
 #include "pd_api.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
+#include "../external/aheasing/easing.h"
 
 #include <stdlib.h>
 
@@ -101,13 +102,14 @@ static int hit_ground(const Ray* r, float tMax, float3* outPos)
 
 static Camera s_camera;
 
-static float3 s_Spheres[] =
+static float3 s_SpheresOrig[] =
 {
 	{2.5f,1,0},
 	{0,1,0},
 	{-2.5f,1,0},
 };
-#define kSphereCount (sizeof(s_Spheres) / sizeof(s_Spheres[0]))
+#define kSphereCount (sizeof(s_SpheresOrig) / sizeof(s_SpheresOrig[0]))
+static float3 s_SpheresPos[kSphereCount];
 static int s_SphereCols[kSphereCount] =
 {
 	75, 150, 225,
@@ -118,6 +120,14 @@ typedef struct SphereOrder {
 	int index;
 } SphereOrder;
 static SphereOrder s_SphereOrder[kSphereCount];
+static char s_SphereVisible[kSphereCount];
+
+// start time, bounce time, bounce height
+static float3 kSphereBounces[kSphereCount] = {
+	{6.0f, 3.0f, 3.0f},
+	{3.0f, 3.0f, 3.0f},
+	{9.0f, 3.0f, 3.0f},
+};
 
 static int hit_world_refl(const Ray* r, Hit* outHit, int* outID, int skip_sphere)
 {
@@ -126,9 +136,9 @@ static int hit_world_refl(const Ray* r, Hit* outHit, int* outID, int skip_sphere
 	float closest = kMaxT;
 	for (int i = 0; i < kSphereCount; ++i)
 	{
-		if (i == skip_sphere)
+		if (i == skip_sphere || !s_SphereVisible[i])
 			continue;
-		if (hit_unit_sphere(r, &s_Spheres[i], closest, &tmpHit))
+		if (hit_unit_sphere(r, &s_SpheresPos[i], closest, &tmpHit))
 		{
 			anything = 1;
 			closest = tmpHit.t;
@@ -149,7 +159,9 @@ static int hit_world_primary(const Ray* r, Hit* outHit, int* outID)
 	for (int ii = 0; ii < kSphereCount; ++ii)
 	{
 		int si = s_SphereOrder[ii].index;
-		if (hit_unit_sphere(r, &s_Spheres[si], kMaxT, outHit))
+		if (!s_SphereVisible[si])
+			continue;
+		if (hit_unit_sphere(r, &s_SpheresPos[si], kMaxT, outHit) && outHit->pos.y > 0.0f)
 		{
 			*outID = si;
 			return 1;
@@ -217,20 +229,26 @@ static int CompareSphereDist(const void* a, const void* b)
 	return 0;
 }
 
-
-static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
-	float cangle = (crank_angle + 68) * M_PIf / 180.0f;
+	float cangle = (crank_angle + 68 + time * 20) * M_PIf / 180.0f;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
 	float dist = 4.0f;
-	camera_init(&s_camera, (float3) { ss * dist, 2.3f, cs * dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
+	camera_init(&s_camera, (float3) { ss* dist, 2.3f, cs* dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
+
 
 	// sort spheres by distance from camera, for primary rays
 	for (int i = 0; i < kSphereCount; ++i)
 	{
+		// animate spheres
+		float3 sp = s_SpheresOrig[i];
+		s_SphereVisible[i] = time > kSphereBounces[i].x;
+		sp.y = 1.0f + kSphereBounces[i].z - BounceEaseOut((time - kSphereBounces[i].x) / kSphereBounces[i].y) * kSphereBounces[i].z;
+		s_SpheresPos[i] = sp;
+
 		s_SphereOrder[i].index = i;
-		float3 vec = v3_sub(s_Spheres[i], s_camera.origin);
+		float3 vec = v3_sub(sp, s_camera.origin);
 		s_SphereOrder[i].dist = v3_lensq(&vec);
 	}
 	qsort(s_SphereOrder, kSphereCount, sizeof(s_SphereOrder[0]), CompareSphereDist);
@@ -261,6 +279,13 @@ static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, fl
 	}
 
 	draw_dithered_screen_2x2(framebuffer, 1);
+}
+
+
+static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+{
+	do_render(crank_angle, time, framebuffer, framebuffer_stride);
+
 
 	return kSphereCount;
 }
