@@ -30,6 +30,9 @@ set(PLAYDATE_GAME_DEVICE playdate_demo_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 
+include_directories(src/external/libxm/include)
+add_compile_definitions(XM_DEBUG=0 XM_DEFENSIVE=0 XM_BIG_ENDIAN=0 XM_LINEAR_INTERPOLATION=0 XM_RAMPING=0 XM_STRINGS=0 XM_LIBXMIZE_DELTA_SAMPLES=1)
+
 set (DEMO_SOURCES
 	src/allocator.c
 	src/allocator.h
@@ -57,6 +60,12 @@ set (DEMO_SOURCES
 	src/util/image_loader.h
 	src/external/bitshifter_radixsort/radixsort.c
 	src/external/bitshifter_radixsort/radixsort.h
+	src/external/libxm/include/xm.h
+	src/external/libxm/src/context.c
+	src/external/libxm/src/load.c
+	src/external/libxm/src/play.c
+	src/external/libxm/src/xm.c
+	src/external/libxm/src/xm_internal.h
 )
 
 if (TOOLCHAIN STREQUAL "armgcc")
