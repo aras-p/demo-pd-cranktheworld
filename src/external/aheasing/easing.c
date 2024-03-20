@@ -302,9 +302,13 @@ AHFloat BounceEaseOut(AHFloat p)
 	{
 		return (4356/361.0f * p * p) - (35442/1805.0f * p) + 16061/1805.0f;
 	}
-	else
+	else if (p < 1.0f)
 	{
 		return (54/5.0f * p * p) - (513/25.0f * p) + 268/25.0f;
+	}
+	else
+	{
+		return 1.0f;
 	}
 }
 
