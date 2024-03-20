@@ -57,6 +57,8 @@ set (DEMO_SOURCES
 	src/util/image_loader.h
 	src/external/bitshifter_radixsort/radixsort.c
 	src/external/bitshifter_radixsort/radixsort.h
+	src/external/aheasing/easing.c
+	src/external/aheasing/easing.h
 )
 
 if (TOOLCHAIN STREQUAL "armgcc")
