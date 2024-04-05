@@ -25,20 +25,15 @@ static void init_puls()
 	for (int i = 0; i < MAXSTEPSHIFT + 1; ++i)
 	{
 		kBlowupTable[i] = BLOWUP / powf(2.0f, i + 8.0f);
-		kStepTable[i] = 1.0f / powf(2.0f, i);
+		kStepTable[i] = 1.0f / powf(2.0f, (float)i);
 	}
-}
-
-static float fractf(float v)
-{
-	return v - floorf(v);
 }
 
 static int func(float timeParam, float3 pos, int stepshift)
 {
-	float v2x = fabsf(fractf(pos.x) - 0.5f) / 2.0f;
-	float v2y = fabsf(fractf(pos.y) - 0.5f) / 2.0f;
-	float v2z = fabsf(fractf(pos.z) - 0.5f) / 2.0f;
+	float v2x = fabsf(fract(pos.x) - 0.5f) / 2.0f;
+	float v2y = fabsf(fract(pos.y) - 0.5f) / 2.0f;
+	float v2z = fabsf(fract(pos.z) - 0.5f) / 2.0f;
 	float r = timeParam;
 	float blowup = kBlowupTable[stepshift];
 

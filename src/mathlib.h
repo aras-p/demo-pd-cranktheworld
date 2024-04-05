@@ -36,6 +36,11 @@ static inline uint32_t swap(uint32_t n)
 #define M_PIf (3.14159265f)
 
 
+static inline float fract(float v)
+{
+	return v - floorf(v);
+}
+
 static inline uint32_t XorShift32(uint32_t* state)
 {
 	uint32_t x = *state;
@@ -97,6 +102,10 @@ static inline float3 v3_sub(float3 a, float3 v)
 {
 	return (float3) { a.x - v.x, a.y - v.y, a.z - v.z };
 }
+static inline float3 v3_subfl(float3 a, float v)
+{
+	return (float3) { a.x - v, a.y - v, a.z - v };
+}
 static inline float3 v3_mul(float3 a, float3 b)
 {
 	return (float3) { a.x * b.x, a.y * b.y, a.z * b.z };
@@ -112,6 +121,17 @@ static inline float3 v3_lerp(float3 a, float3 b, float f)
 	return r;
 }
 
+static inline float3 v3_fract(float3 v)
+{
+	float3 r = { fract(v.x), fract(v.y), fract(v.z) };
+	return r;
+}
+
+static inline float3 v3_abs(float3 v)
+{
+	float3 r = { fabsf(v.x), fabsf(v.y), fabsf(v.z) };
+	return r;
+}
 
 static inline float3 v3_reflect(float3 v, float3 n)
 {
