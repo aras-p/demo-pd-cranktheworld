@@ -13,6 +13,7 @@
 typedef struct TraceState
 {
 	float t;
+	float rotmx, rotmy;
 	float3 pos;
 } TraceState;
 
@@ -26,7 +27,7 @@ static float scene_sdf(float3 q)
 
 	// Layer two
 	p = v3_abs(v3_subfl(v3_fract(q), 0.5f));
-	d = MAX(d, MIN(MAX(p.x, p.y), MIN(MAX(p.y, p.z), MAX(p.x, p.z))) - 1.0f / 3.0f + 0.05f);
+	d = MAX(d, MIN(MAX(p.x, p.y), MIN(MAX(p.y, p.z), MAX(p.x, p.z))) - (1.0f / 3.0f) + 0.05f);
 
 	return d;
 }
@@ -34,37 +35,43 @@ static float scene_sdf(float3 q)
 static int trace_ray(const TraceState* st, float x, float y)
 {
 	float3 pos = st->pos;
-	float3 dir = { x, y, 1.0f };
-	dir = v3_normalize(dir);
-	//dir = (float3){ dir.y, dir.z * st->cos_a - dir.x * st->sin_a, dir.x * st->cos_a + dir.z * st->sin_a };
-	//dir = (float3){ dir.y, dir.z * st->cos_a - dir.x * st->sin_a, dir.x * st->cos_a + dir.z * st->sin_a };
-	//dir = (float3){ dir.y, dir.z * st->cos_a - dir.x * st->sin_a, dir.x * st->cos_a + dir.z * st->sin_a };
+	float3 dir = { x, y, 1.0f }; // do not normalize on purpose lol
 
 	// Rotate the ray
-	//vec2 m = sin(vec2(0, 1.57079632) + iTime / 4.);
-	//rd.xy = mat2(m.y, -m.x, m)*rd.xy;
-	//rd.xz = mat2(m.y, -m.x, m)*rd.xz;
+	// dir.xy = mat2(m.y, -m.x, m)*dir.xy
+	float nx = st->rotmy * dir.x + st->rotmx * dir.y;
+	float ny = st->rotmx * dir.x - st->rotmy * dir.y;
+	dir.x = nx;
+	dir.y = ny;
+	// dir.xz = mat2(m.y, -m.x, m)*dir.xz
+	nx = st->rotmy * dir.x + st->rotmx * dir.z;
+	ny = st->rotmx * dir.x - st->rotmy * dir.z;
+	dir.x = nx;
+	dir.z = ny;
 
 	float t = 0.0f;
-	for (int i = 0; i < MAX_TRACE_STEPS; ++i)
+	int i;
+	for (i = 0; i < MAX_TRACE_STEPS; ++i)
 	{
 		float3 q = v3_add(pos, v3_mulfl(dir, t));
 		float d = scene_sdf(q);
-		if (d < t * 0.0025f || d > FAR_DIST)
+		if (d < t * 0.05f || d > FAR_DIST)
 			break;
 		t += d;
 	}
-	//return (x) * 255;
-	return MIN((int)(t * 0.3f * 255.0f), 255);
+	//return MIN((int)(t * 0.3f * 255.0f), 255);
+	return 255 - i * 31;
 }
 
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	TraceState st;
-	st.t = time * 30.0f;
+	st.t = time;
 	st.pos.x = 0.0f;
 	st.pos.y = 0.0f;
 	st.pos.z = time;
+	st.rotmx = sinf(st.t / 4.0f);
+	st.rotmy = sinf(st.t / 4.0f + M_PIf * 0.5f);
 
 	// trace one ray per 2x2 pixel block
 	// x: -1.67 .. +1.67
