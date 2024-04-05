@@ -63,6 +63,8 @@ static int trace_ray(const TraceState* st, float x, float y)
 	return 255 - i * 31;
 }
 
+static int s_frame_count = 0;
+
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	TraceState st;
@@ -82,21 +84,32 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	float dy = yext * 4 / LCD_ROWS;
 
 	float y = yext - dy * 0.5f;
-	int pix_idx = 0;
 	for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy)
 	{
-		float x = -xext + dx * 0.5f;
+		// Temporal: every frame update just one out of every 2x2 pixel blocks.
+		// Which means every other frame we skip every other row.
+		if ((s_frame_count & 1) == (py & 1))
+			continue;
 
-		for (int px = 0; px < LCD_COLUMNS / 2; ++px, x += dx, ++pix_idx)
+		float x = -xext + dx * 0.5f;
+		int pix_idx = py * LCD_COLUMNS / 2;
+		// And for each row we step at 2 pixels, but shift location by one every
+		// other frame.
+		if ((s_frame_count & 2)) {
+			x += dx;
+			pix_idx++;
+		}
+		for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 2, pix_idx += 2)
 		{
 			int val = trace_ray(&st, x, y);
-			g_screen_buffer[pix_idx] = val;
+			g_screen_buffer_2x2sml[pix_idx] = val;
 		}
 	}
 
+	memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS/2*LCD_ROWS/2);
 	draw_dithered_screen_2x2(framebuffer, 1);
+	++s_frame_count;
 }
-
 
 static int fx_sponge_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {

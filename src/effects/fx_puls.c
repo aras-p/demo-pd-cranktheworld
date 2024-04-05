@@ -44,7 +44,7 @@ static int func(float timeParam, float3 pos, int stepshift)
 	v2y = 0.25f - v2y;
 	v2z = 0.25f - v2z;
 	sum = v2x + v2y + v2z;
-	if (sum - 0.1445 - r < blowup) return 2;
+	if (sum - 0.1445f - r < blowup) return 2;
 
 	int hue;
 	float width;

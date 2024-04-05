@@ -10,6 +10,7 @@
 uint8_t* g_blue_noise;
 
 uint8_t g_screen_buffer[LCD_COLUMNS * LCD_ROWS];
+uint8_t g_screen_buffer_2x2sml[LCD_COLUMNS/2 * LCD_ROWS/2];
 
 void init_blue_noise(void* pd_api)
 {
