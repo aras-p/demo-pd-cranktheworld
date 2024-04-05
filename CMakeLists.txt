@@ -42,6 +42,7 @@ set (DEMO_SOURCES
 	src/effects/fx_moire.c
 	src/effects/fx_planes.c
 	src/effects/fx_plasma.c
+	src/effects/fx_puls.c
 	src/effects/fx_raytrace.c
 	src/effects/fx_starfield.c
 	src/effects/fx_voxel.c
