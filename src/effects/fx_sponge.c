@@ -64,57 +64,125 @@ static int trace_ray(const TraceState* st, float x, float y)
 }
 
 static int s_frame_count = 0;
+static int s_temporal_mode = 0;
+#define TEMPORAL_MODE_COUNT 3
 
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	TraceState st;
-	st.t = time;
+	st.t = time * 0.5f;
 	st.pos.x = 0.0f;
 	st.pos.y = 0.0f;
-	st.pos.z = time;
+	st.pos.z = st.t;
 	st.rotmx = sinf(st.t / 4.0f);
-	st.rotmy = sinf(st.t / 4.0f + M_PIf * 0.5f);
+	st.rotmy = cosf(st.t / 4.0f);
 
-	// trace one ray per 2x2 pixel block
-	// x: -1.67 .. +1.67
-	// y: -1.0 .. +1.0
-	float xext = 1.6667f;
-	float yext = 1.0f;
-	float dx = xext * 4 / LCD_COLUMNS;
-	float dy = yext * 4 / LCD_ROWS;
+	float xsize = 3.3333f;
+	float ysize = 2.0f;
+	float dx = xsize / LCD_COLUMNS;
+	float dy = ysize / LCD_ROWS;
 
-	float y = yext - dy * 0.5f;
-	for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy)
+	if (s_temporal_mode == 0)
 	{
-		// Temporal: every frame update just one out of every 2x2 pixel blocks.
-		// Which means every other frame we skip every other row.
-		if ((s_frame_count & 1) == (py & 1))
-			continue;
-
-		float x = -xext + dx * 0.5f;
-		int pix_idx = py * LCD_COLUMNS / 2;
-		// And for each row we step at 2 pixels, but shift location by one every
-		// other frame.
-		if ((s_frame_count & 2)) {
-			x += dx;
-			pix_idx++;
-		}
-		for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 2, pix_idx += 2)
+		// temporal: one ray for each 2x2 block, and also update one pixel within each 2x2 macroblock (16x fewer rays): 28fps (35ms)
+		float y = ysize / 2 - dy;
+		for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy * 2)
 		{
-			int val = trace_ray(&st, x, y);
-			g_screen_buffer_2x2sml[pix_idx] = val;
+			// Temporal: every frame update just one out of every 2x2 pixel blocks.
+			// Which means every other frame we skip every other row.
+			if ((s_frame_count & 1) == (py & 1))
+				continue;
+
+			float x = -xsize / 2 + dx;
+			int pix_idx = py * LCD_COLUMNS / 2;
+			// And for each row we step at 2 pixels, but shift location by one every
+			// other frame.
+			if ((s_frame_count & 2)) {
+				x += dx;
+				pix_idx++;
+			}
+			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer_2x2sml[pix_idx] = val;
+			}
 		}
+
+		memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS / 2 * LCD_ROWS / 2);
+		draw_dithered_screen_2x2(framebuffer, 1);
+	}
+	if (s_temporal_mode == 1)
+	{
+		// 4x2 block temporal update one pixel per frame
+		float y = ysize / 2 - dy * 0.5f;
+		int t_frame_index = s_frame_count & 7;
+		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
+		{
+			int t_row_index = py & 1;
+			int col_offset = g_order_pattern_4x2[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float x = -xsize / 2 + dx * 0.5f;
+			int pix_idx = py * LCD_COLUMNS;
+
+			x += dx * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 4, x += dx * 4, pix_idx += 4)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	if (s_temporal_mode == 2)
+	{
+		// 4x3 block temporal update one pixel per frame
+		float y = ysize / 2 - dy * 0.5f;
+		int t_frame_index = s_frame_count % 12;
+		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
+		{
+			int t_row_index = py % 3;
+			int col_offset = g_order_pattern_4x3[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float x = -xsize / 2 + dx * 0.5f;
+			int pix_idx = py * LCD_COLUMNS;
+
+			x += dx * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 4, x += dx * 4, pix_idx += 4)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
 	}
 
-	memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS/2*LCD_ROWS/2);
-	draw_dithered_screen_2x2(framebuffer, 1);
+
 	++s_frame_count;
 }
 
 static int fx_sponge_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
+	if (buttons_pressed & kButtonLeft)
+	{
+		s_temporal_mode--;
+		if (s_temporal_mode < 0)
+			s_temporal_mode = TEMPORAL_MODE_COUNT - 1;
+	}
+	if (buttons_pressed & kButtonRight)
+	{
+		s_temporal_mode++;
+		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
+			s_temporal_mode = 0;
+	}
+
 	do_render(crank_angle, time, framebuffer, framebuffer_stride);
-	return MAX_TRACE_STEPS;
+	return s_temporal_mode;
 }
 
 Effect fx_sponge_init(void* pd_api)
