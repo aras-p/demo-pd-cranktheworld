@@ -102,8 +102,8 @@ static int trace_ray(const PulsState* st, float x, float y)
 }
 
 static int s_frame_count = 0;
-static int s_temporal_mode = 0;
-#define TEMPORAL_MODE_COUNT 5
+static int s_temporal_mode = 1;
+#define TEMPORAL_MODE_COUNT 6
 
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
@@ -139,6 +139,35 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	}
 	if (s_temporal_mode == 1)
 	{
+		// temporal: one ray for each 2x2 block, and also update one pixel within each 2x2 macroblock (16x fewer rays): 28fps (35ms)
+		float y = ysize / 2 - dy;
+		for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy * 2)
+		{
+			// Temporal: every frame update just one out of every 2x2 pixel blocks.
+			// Which means every other frame we skip every other row.
+			if ((s_frame_count & 1) == (py & 1))
+				continue;
+
+			float x = -xsize / 2 + dx;
+			int pix_idx = py * LCD_COLUMNS / 2;
+			// And for each row we step at 2 pixels, but shift location by one every
+			// other frame.
+			if ((s_frame_count & 2)) {
+				x += dx;
+				pix_idx++;
+			}
+			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer_2x2sml[pix_idx] = val;
+			}
+		}
+
+		memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS / 2 * LCD_ROWS / 2);
+		draw_dithered_screen_2x2(framebuffer, 1);
+	}
+	if (s_temporal_mode == 2)
+	{
 		// 2x2 block temporal update one pixel per frame
 		float y = ysize / 2 - dy * 0.5f;
 		int t_frame_index = s_frame_count & 3;
@@ -162,7 +191,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		}
 		draw_dithered_screen(framebuffer, 0);
 	}
-	if (s_temporal_mode == 2)
+	if (s_temporal_mode == 3)
 	{
 		// 4x2 block temporal update one pixel per frame
 		float y = ysize / 2 - dy * 0.5f;
@@ -187,7 +216,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		}
 		draw_dithered_screen(framebuffer, 0);
 	}
-	if (s_temporal_mode == 3)
+	if (s_temporal_mode == 4)
 	{
 		// 4x3 block temporal update one pixel per frame
 		float y = ysize / 2 - dy * 0.5f;
@@ -212,7 +241,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		}
 		draw_dithered_screen(framebuffer, 0);
 	}
-	if (s_temporal_mode == 4)
+	if (s_temporal_mode == 5)
 	{
 		// 4x4 block temporal update one pixel per frame
 		float y = ysize / 2 - dy * 0.5f;

@@ -23,7 +23,7 @@ typedef enum
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = kFxSponge;
+static EffectType s_cur_effect = kFxPuls;
 
 Effect fx_planes_init(void* pd_api);
 Effect fx_starfield_init(void* pd_api);
