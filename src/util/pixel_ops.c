@@ -42,6 +42,16 @@ void draw_dithered_scanline(const uint8_t* values, int y, int bias, uint8_t* fra
 	memcpy(row, scanline, sizeof(scanline));
 }
 
+void draw_dithered_screen(uint8_t* framebuffer, int bias)
+{
+	const uint8_t* src = g_screen_buffer;
+	for (int y = 0; y < LCD_ROWS; ++y)
+	{
+		draw_dithered_scanline(src, y, bias, framebuffer);
+		src += LCD_COLUMNS;
+	}
+}
+
 void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter)
 {
 	uint8_t rowvalues[LCD_COLUMNS];
