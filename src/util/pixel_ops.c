@@ -12,6 +12,73 @@ uint8_t* g_blue_noise;
 uint8_t g_screen_buffer[LCD_COLUMNS * LCD_ROWS];
 uint8_t g_screen_buffer_2x2sml[LCD_COLUMNS/2 * LCD_ROWS/2];
 
+// 2x2 pixel block ordered dither matrix.
+// 0 3
+// 2 1
+int g_order_pattern_2x2[4][2] = {
+	{1, 0},
+	{0, 2},
+	{2, 0},
+	{0, 1},
+};
+
+// 4x2 pixel block ordered dither matrix.
+// 0 4 2 6
+// 3 7 1 5
+int g_order_pattern_4x2[8][2] = {
+	{1, 0},
+	{0, 3},
+	{3, 0},
+	{0, 1},
+	{2, 0},
+	{0, 4},
+	{4, 0},
+	{0, 2},
+};
+
+// 4x3 pixel block ordered dither matrix.
+// 0 9 6 3
+// 7 4 8 B
+// 2 A 1 5
+int g_order_pattern_4x3[12][3] = {
+	{1, 0, 0},
+	{0, 0, 3},
+	{0, 0, 1},
+	{4, 0, 0},
+	{0, 2, 0},
+	{0, 0, 4},
+	{3, 0, 0},
+	{0, 1, 0},
+	{0, 3, 0},
+	{2, 0, 0},
+	{0, 0, 2},
+	{0, 4, 0},
+};
+
+// 4x4 pixel block ordered dither matrix.
+//  0 12  3 15
+//  8  4 11  7
+//  2 14  1 13
+// 10  6  9  5
+int g_order_pattern_4x4[16][4] = {
+	{1, 0, 0, 0},
+	{0, 0, 3, 0},
+	{0, 0, 1, 0},
+	{3, 0, 0, 0},
+	{0, 2, 0, 0},
+	{0, 0, 0, 4},
+	{0, 0, 0, 2},
+	{0, 4, 0, 0},
+	{0, 1, 0, 0},
+	{0, 0, 0, 3},
+	{0, 0, 0, 1},
+	{0, 3, 0, 0},
+	{2, 0, 0, 0},
+	{0, 0, 4, 0},
+	{0, 0, 2, 0},
+	{4, 0, 0, 0},
+};
+
 void init_blue_noise(void* pd_api)
 {
 	int bn_w, bn_h;

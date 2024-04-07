@@ -23,7 +23,7 @@ typedef enum
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = kFxTemporalTest;
+static EffectType s_cur_effect = kFxPuls;
 
 Effect fx_planes_init(void* pd_api);
 Effect fx_starfield_init(void* pd_api);
@@ -95,12 +95,12 @@ static int update(void* userdata)
 	pd->system->getButtonState(&btCur, &btPushed, &btRel);
 	if (btPushed & kButtonB) {
 		s_cur_effect--;
-		if (s_cur_effect < 0)
+		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
 			s_cur_effect = kFxCount-1;
 	}
 	if (btPushed & kButtonA) {
 		s_cur_effect++;
-		if (s_cur_effect >= kFxCount)
+		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
 			s_cur_effect = 0;
 	}
 

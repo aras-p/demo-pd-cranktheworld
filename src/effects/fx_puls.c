@@ -16,19 +16,6 @@ const int MAXSTEP = 24;
 static float kBlowupTable[MAXSTEPSHIFT + 1]; // BLOWUP / pow(2, stepshift + 8)
 static float kStepTable[MAXSTEPSHIFT + 1]; // 1.0f / pow(2, stepshift)
 
-static bool s_Inited = false;
-static void init_puls()
-{
-	if (s_Inited)
-		return;
-	s_Inited = true;
-	for (int i = 0; i < MAXSTEPSHIFT + 1; ++i)
-	{
-		kBlowupTable[i] = BLOWUP / powf(2.0f, i + 8.0f);
-		kStepTable[i] = 1.0f / powf(2.0f, (float)i);
-	}
-}
-
 static int func(float timeParam, float3 pos, int stepshift)
 {
 	float v2x = fabsf(fract(pos.x) - 0.5f) / 2.0f;
@@ -114,12 +101,14 @@ static int trace_ray(const PulsState* st, float x, float y)
 	return stepshift * 31;
 }
 
+static int s_frame_count = 0;
+static int s_temporal_mode = 0;
+#define TEMPORAL_MODE_COUNT 5
+
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
-	init_puls();
-
 	PulsState st;
-	st.t = time * 30.0f;
+	st.t = time * 5.0f;
 	st.t_param = 0.0769f * sinf(st.t * -0.0708f);
 	st.sin_a = sinf(st.t * 0.00564f);
 	st.cos_a = cosf(st.t * 0.00564f);
@@ -127,36 +116,157 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	st.pos.y = 1.1875f + 0.0134f * st.t;
 	st.pos.z = 0.875f + 0.0134f * st.t;
 
-	// trace one ray per 2x2 pixel block
-	// x: -0.5 .. +0.5
-	// y: -0.3 .. +0.3
-	float dx = 2.0f / LCD_COLUMNS;
-	float dy = 1.2f / LCD_ROWS;
+	float xsize = 1.0f;
+	float ysize = 0.6f;
+	float dx = xsize / LCD_COLUMNS;
+	float dy = ysize / LCD_ROWS;
 
-	float y = 0.3f - dy * 0.5f;
-	int pix_idx = 0;
-	for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy)
+	if (s_temporal_mode == 0)
 	{
-		float x = -0.5f + dx * 0.5f;
-
-		for (int px = 0; px < LCD_COLUMNS / 2; ++px, x += dx, ++pix_idx)
+		// trace one ray per 2x2 pixel block
+		float y = ysize / 2 - dy;
+		for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy * 2)
 		{
-			int val = trace_ray(&st, x, y);
-			g_screen_buffer[pix_idx] = val;
+			float x = -xsize / 2 + dx;
+			int pix_idx = py * LCD_COLUMNS / 2;
+			for (int px = 0; px < LCD_COLUMNS / 2; ++px, x += dx * 2, ++pix_idx)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
 		}
+		draw_dithered_screen_2x2(framebuffer, 1);
 	}
+	if (s_temporal_mode == 1)
+	{
+		// 2x2 block temporal update one pixel per frame
+		float y = ysize / 2 - dy * 0.5f;
+		int t_frame_index = s_frame_count & 3;
+		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
+		{
+			int t_row_index = py & 1;
+			int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
 
-	draw_dithered_screen_2x2(framebuffer, 1);
+			float x = -xsize / 2 + dx * 0.5f;
+			int pix_idx = py * LCD_COLUMNS;
+
+			x += dx * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 2, x += dx * 2, pix_idx += 2)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	if (s_temporal_mode == 2)
+	{
+		// 4x2 block temporal update one pixel per frame
+		float y = ysize / 2 - dy * 0.5f;
+		int t_frame_index = s_frame_count & 7;
+		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
+		{
+			int t_row_index = py & 1;
+			int col_offset = g_order_pattern_4x2[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float x = -xsize / 2 + dx * 0.5f;
+			int pix_idx = py * LCD_COLUMNS;
+
+			x += dx * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 4, x += dx * 4, pix_idx += 4)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	if (s_temporal_mode == 3)
+	{
+		// 4x3 block temporal update one pixel per frame
+		float y = ysize / 2 - dy * 0.5f;
+		int t_frame_index = s_frame_count % 12;
+		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
+		{
+			int t_row_index = py % 3;
+			int col_offset = g_order_pattern_4x3[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float x = -xsize / 2 + dx * 0.5f;
+			int pix_idx = py * LCD_COLUMNS;
+
+			x += dx * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 4, x += dx * 4, pix_idx += 4)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	if (s_temporal_mode == 4)
+	{
+		// 4x4 block temporal update one pixel per frame
+		float y = ysize / 2 - dy * 0.5f;
+		int t_frame_index = s_frame_count & 15;
+		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
+		{
+			int t_row_index = py & 3;
+			int col_offset = g_order_pattern_4x4[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float x = -xsize / 2 + dx * 0.5f;
+			int pix_idx = py * LCD_COLUMNS;
+
+			x += dx * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 4, x += dx * 4, pix_idx += 4)
+			{
+				int val = trace_ray(&st, x, y);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	++s_frame_count;
 }
 
 
 static int fx_puls_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
+	if (buttons_pressed & kButtonLeft)
+	{
+		s_temporal_mode--;
+		if (s_temporal_mode < 0)
+			s_temporal_mode = TEMPORAL_MODE_COUNT - 1;
+	}
+	if (buttons_pressed & kButtonRight)
+	{
+		s_temporal_mode++;
+		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
+			s_temporal_mode = 0;
+	}
+
 	do_render(crank_angle, time, framebuffer, framebuffer_stride);
-	return MAXITERS;
+	return s_temporal_mode;
 }
 
 Effect fx_puls_init(void* pd_api)
 {
+	for (int i = 0; i < MAXSTEPSHIFT + 1; ++i)
+	{
+		kBlowupTable[i] = BLOWUP / powf(2.0f, i + 8.0f);
+		kStepTable[i] = 1.0f / powf(2.0f, (float)i);
+	}
+
 	return (Effect) { fx_puls_update };
 }
