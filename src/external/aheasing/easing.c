@@ -271,7 +271,7 @@ AHFloat BackEaseOut(AHFloat p)
 // y = (1/2)*(1-((1-x)^3-(1-x)*sin((1-x)*pi))+1) ; [0.5, 1]
 AHFloat BackEaseInOut(AHFloat p)
 {
-	if(p < 0.5)
+	if(p < 0.5f)
 	{
 		AHFloat f = 2 * p;
 		return 0.5f * (f * f * f - f * sinf(f * M_PIf));
