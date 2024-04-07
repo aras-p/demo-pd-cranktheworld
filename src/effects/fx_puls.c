@@ -53,13 +53,13 @@ static int trace_ray(const PulsState* st, float x, float y)
 	{
 		float3 q = v3_add(pos, v3_mulfl(dir, t));
 		float d = puls_sdf(st->t_param, q);
-		if (d < t * 0.05f)
+		if (d < t * 0.07f)
 			break;
-		t += d * 1.0f;
+		t += d * 1.7f;
 	}
 
 	//return (int)(((float)j) / (float)MAXSTEP * 255.0f);
-	return 255 - MIN(255, i * 10);
+	return MIN((int)(t * 0.25f * 255.0f), 255);
 }
 
 static int s_frame_count = 0;
