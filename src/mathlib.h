@@ -42,6 +42,22 @@ static inline float fract(float v)
 	return v - floorf(v);
 }
 
+static inline float smoothstep(float a, float b, float v)
+{
+	float t = (v - a) / (b - a);
+	if (t < 0.0f) t = 0.0f;
+	if (t > 1.0f) t = 1.0f;
+	return t * t * (3.0f - 2.0f * t);
+}
+
+static inline float invlerp(float a, float b, float v)
+{
+	float t = (v - a) / (b - a);
+	if (t < 0.0f) t = 0.0f;
+	if (t > 1.0f) t = 1.0f;
+	return t;
+}
+
 static inline uint32_t XorShift32(uint32_t* state)
 {
 	uint32_t x = *state;

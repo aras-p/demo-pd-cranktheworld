@@ -47,6 +47,7 @@ set (DEMO_SOURCES
 	src/effects/fx_sponge.c
 	src/effects/fx_starfield.c
 	src/effects/fx_temporal_test.c
+	src/effects/fx_various_test.c
 	src/effects/fx_voxel.c
 	src/mini3d/render.c
 	src/mini3d/render.h

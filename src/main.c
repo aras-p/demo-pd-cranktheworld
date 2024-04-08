@@ -18,12 +18,13 @@ typedef enum
 	kFxPuls,
 	kFxSponge,
 	kFxTemporalTest,
+	kFxVariousTest,
 	kFxCount,
 } EffectType;
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = kFxRaytrace;
+static EffectType s_cur_effect = kFxVariousTest;
 
 Effect fx_planes_init(void* pd_api);
 Effect fx_starfield_init(void* pd_api);
@@ -36,6 +37,7 @@ Effect fx_voxel_init(void* pd_api);
 Effect fx_puls_init(void* pd_api);
 Effect fx_sponge_init(void* pd_api);
 Effect fx_temporal_test_init(void* pd_api);
+Effect fx_various_test_init(void* pd_api);
 
 static int update(void* userdata);
 
@@ -79,6 +81,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		s_effects[kFxPuls] = fx_puls_init(pd);
 		s_effects[kFxSponge] = fx_sponge_init(pd);
 		s_effects[kFxTemporalTest] = fx_temporal_test_init(pd);
+		s_effects[kFxVariousTest] = fx_various_test_init(pd);
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);
