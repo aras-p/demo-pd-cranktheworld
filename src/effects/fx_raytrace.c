@@ -46,14 +46,7 @@ static void camera_init(Camera* cam, float3 lookFrom, float3 lookAt, float3 vup,
 	cam->vertical = v3_mulfl(cam->v, 2 * halfHeight * focusDist);
 }
 
-typedef struct Hit
-{
-	float3 pos;
-	float3 normal;
-	float t;
-} Hit;
-
-static int hit_unit_sphere(const Ray* r, const float3* pos, float tMax, Hit* outHit)
+static int hit_unit_sphere(const Ray* r, const float3* pos, float tMax, float* outT)
 {
 	float3 oc = v3_sub(r->orig, *pos);
 	float b = v3_dot(oc, r->dir);
@@ -70,9 +63,7 @@ static int hit_unit_sphere(const Ray* r, const float3* pos, float tMax, Hit* out
 			if (t <= kMinT || t >= tMax)
 				return 0;
 		}
-		outHit->pos = ray_pointat(r, t);
-		outHit->normal = v3_sub(outHit->pos, *pos);
-		outHit->t = t;
+		*outT = t;
 		return 1;
 	}
 	return 0;
@@ -129,24 +120,41 @@ static float3 kSphereBounces[kSphereCount] = {
 	{9.0f, 3.0f, 3.0f},
 };
 
-static int hit_world_refl(const Ray* r, Hit* outHit, int* outID, int skip_sphere)
+static float3 s_LightDir;
+
+static bool shadow_ray(const Ray* r)
 {
-	Hit tmpHit;
+	for (int i = 0; i < kSphereCount; ++i)
+	{
+		if (!s_SphereVisible[i])
+			continue;
+		float t;
+		if (hit_unit_sphere(r, &s_SpheresPos[i], kMaxT, &t))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+static int hit_world_refl(const Ray* r, float* outSphereT, float3 *outGroundPos, int* outID, int skip_sphere)
+{
+	float t;
 	int anything = 0;
 	float closest = kMaxT;
 	for (int i = 0; i < kSphereCount; ++i)
 	{
 		if (i == skip_sphere || !s_SphereVisible[i])
 			continue;
-		if (hit_unit_sphere(r, &s_SpheresPos[i], closest, &tmpHit))
+		if (hit_unit_sphere(r, &s_SpheresPos[i], closest, &t))
 		{
 			anything = 1;
-			closest = tmpHit.t;
-			*outHit = tmpHit;
+			closest = t;
+			*outSphereT = t;
 			*outID = i;
 		}
 	}
-	if (!anything && hit_ground(r, closest, &outHit->pos))
+	if (!anything && hit_ground(r, closest, outGroundPos))
 	{
 		anything = 1;
 		*outID = -1;
@@ -154,20 +162,26 @@ static int hit_world_refl(const Ray* r, Hit* outHit, int* outID, int skip_sphere
 	return anything;
 }
 
-static int hit_world_primary(const Ray* r, Hit* outHit, int* outID)
+static int hit_world_primary(const Ray* r, float* outSphereT, float3* outGroundPos, int* outID)
 {
 	for (int ii = 0; ii < kSphereCount; ++ii)
 	{
 		int si = s_SphereOrder[ii].index;
 		if (!s_SphereVisible[si])
 			continue;
-		if (hit_unit_sphere(r, &s_SpheresPos[si], kMaxT, outHit) && outHit->pos.y > 0.0f)
+		float t;
+		if (hit_unit_sphere(r, &s_SpheresPos[si], kMaxT, &t))
 		{
-			*outID = si;
-			return 1;
+			float hitY = r->orig.y + r->dir.y * t;
+			if (hitY > 0.0f) // otherwise it would be below ground
+			{
+				*outID = si;
+				*outSphereT = t;
+				return 1;
+			}
 		}
 	}
-	if (hit_ground(r, kMaxT, &outHit->pos))
+	if (hit_ground(r, kMaxT, outGroundPos))
 	{
 		*outID = -1;
 		return 1;
@@ -177,13 +191,14 @@ static int hit_world_primary(const Ray* r, Hit* outHit, int* outID)
 
 static int trace_refl_ray(const Ray* ray, int parent_id)
 {
-	Hit rec;
+	float sphereT;
+	float3 groundPos;
 	int id = 0;
-	if (hit_world_refl(ray, &rec, &id, parent_id))
+	if (hit_world_refl(ray, &sphereT, &groundPos, &id, parent_id))
 	{
 		if (id < 0) {
-			int gx = (int)rec.pos.x;
-			int gy = (int)rec.pos.z;
+			int gx = (int)groundPos.x;
+			int gy = (int)groundPos.z;
 			int val = (gx ^ gy) >> 1;
 			return val & 1 ? 25 : 240;
 		}
@@ -197,19 +212,32 @@ static int trace_refl_ray(const Ray* ray, int parent_id)
 
 static int trace_ray(const Ray* ray)
 {
-	Hit rec;
+	float sphereT;
+	float3 groundPos;
 	int id = 0;
-	if (hit_world_primary(ray, &rec, &id))
+	if (hit_world_primary(ray, &sphereT, &groundPos, &id))
 	{
 		if (id < 0) {
-			int gx = (int)rec.pos.x;
-			int gy = (int)rec.pos.z;
+			int gx = (int)groundPos.x;
+			int gy = (int)groundPos.z;
 			int val = ((gx ^ gy) >> 1) & 1;
-			return val ? 25 : 240;
+			int baseCol = val ? 50 : 240;
+
+			Ray sray;
+			sray.orig = groundPos;
+			sray.dir = s_LightDir;
+			if (shadow_ray(&sray))
+			{
+				baseCol /= 4;
+			}
+
+			return baseCol;
 		}
 		Ray refl_ray;
-		refl_ray.orig = rec.pos;
-		refl_ray.dir = v3_reflect(ray->dir, rec.normal);
+		float3 pos = ray_pointat(ray, sphereT);
+		float3 nor = v3_sub(pos, s_SpheresPos[id]);
+		refl_ray.orig = pos;
+		refl_ray.dir = v3_reflect(ray->dir, nor);
 		return (trace_refl_ray(&refl_ray, id) * s_SphereCols[id]) >> 8;
 	}
 	else
@@ -229,8 +257,15 @@ static int CompareSphereDist(const void* a, const void* b)
 	return 0;
 }
 
+static int s_frame_count = 0;
+static int s_temporal_mode = 1;
+#define TEMPORAL_MODE_COUNT 3
+
+
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
+	time = 24; // debug
+
 	float cangle = (crank_angle + 68 + time * 20) * M_PIf / 180.0f;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
@@ -253,44 +288,127 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	}
 	qsort(s_SphereOrder, kSphereCount, sizeof(s_SphereOrder[0]), CompareSphereDist);
 
-	// trace one ray per 2x2 pixel block
-	float dv = 2.0f / LCD_ROWS;
-	float du = 2.0f / LCD_COLUMNS;
 	Ray camRay;
 	camRay.orig = s_camera.origin;
-
-	float vv = 1.0f - dv * 0.5f;
-	int pix_idx = 0;
-	for (int py = 0; py < LCD_ROWS / 2; ++py, vv -= dv)
+	if (s_temporal_mode == 0)
 	{
-		float uu = du * 0.5f;
+		// trace one ray per 2x2 pixel block
+		float dv = 2.0f / LCD_ROWS;
+		float du = 2.0f / LCD_COLUMNS;
 
-		float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
-		rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
-
-		for (int px = 0; px < LCD_COLUMNS / 2; ++px, uu += du, ++pix_idx)
+		float vv = 1.0f - dv * 0.5f;
+		int pix_idx = 0;
+		for (int py = 0; py < LCD_ROWS / 2; ++py, vv -= dv)
 		{
-			float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
-			camRay.dir = v3_normalize(rdir);
+			float uu = du * 0.5f;
 
-			int val = trace_ray(&camRay);
-			g_screen_buffer[pix_idx] = val;
+			float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
+			rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
+
+			for (int px = 0; px < LCD_COLUMNS / 2; ++px, uu += du, ++pix_idx)
+			{
+				float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
+				camRay.dir = v3_normalize(rdir);
+
+				int val = trace_ray(&camRay);
+				g_screen_buffer[pix_idx] = val;
+			}
 		}
+		draw_dithered_screen_2x2(framebuffer, 1);
+	}
+	if (s_temporal_mode == 1)
+	{
+		// 2x2 block temporal update one pixel per frame
+		float dv = 1.0f / LCD_ROWS;
+		float du = 1.0f / LCD_COLUMNS;
+		float vv = 1.0f - dv * 0.5f;
+		int t_frame_index = s_frame_count & 3;
+		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
+		{
+			int t_row_index = py & 1;
+			int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float uu = du * 0.5f;
+			float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
+			rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
+
+			int pix_idx = py * LCD_COLUMNS;
+
+			uu += du * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 2, uu += du * 2, pix_idx += 2)
+			{
+				float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
+				camRay.dir = v3_normalize(rdir);
+
+				int val = trace_ray(&camRay);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	if (s_temporal_mode == 2)
+	{
+		// 4x2 block temporal update one pixel per frame
+		float dv = 1.0f / LCD_ROWS;
+		float du = 1.0f / LCD_COLUMNS;
+		float vv = 1.0f - dv * 0.5f;
+		int t_frame_index = s_frame_count & 7;
+		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
+		{
+			int t_row_index = py & 1;
+			int col_offset = g_order_pattern_4x2[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float uu = du * 0.5f;
+			float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
+			rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
+
+			int pix_idx = py * LCD_COLUMNS;
+
+			uu += du * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 4, uu += du * 4, pix_idx += 4)
+			{
+				float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
+				camRay.dir = v3_normalize(rdir);
+
+				int val = trace_ray(&camRay);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
 	}
 
-	draw_dithered_screen_2x2(framebuffer, 1);
+	++s_frame_count;
 }
 
 
 static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
+	if (buttons_pressed & kButtonLeft)
+	{
+		s_temporal_mode--;
+		if (s_temporal_mode < 0)
+			s_temporal_mode = TEMPORAL_MODE_COUNT - 1;
+	}
+	if (buttons_pressed & kButtonRight)
+	{
+		s_temporal_mode++;
+		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
+			s_temporal_mode = 0;
+	}
+
 	do_render(crank_angle, time, framebuffer, framebuffer_stride);
 
-
-	return kSphereCount;
+	return s_temporal_mode;
 }
 
 Effect fx_raytrace_init(void* pd_api)
 {
+	s_LightDir = v3_normalize((float3) { 0.8f, 1.0f, 0.6f });
 	return (Effect) {fx_raytrace_update};
 }

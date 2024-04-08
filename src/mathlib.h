@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
 
 #if TARGET_PLAYDATE
