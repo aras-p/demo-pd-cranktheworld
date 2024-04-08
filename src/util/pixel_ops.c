@@ -22,6 +22,18 @@ int g_order_pattern_2x2[4][2] = {
 	{0, 1},
 };
 
+// 3x2 pixel block ordered dither matrix.
+// 0 2 4
+// 3 5 1
+int g_order_pattern_3x2[6][2] = {
+	{1, 0},
+	{0, 3},
+	{2, 0},
+	{0, 1},
+	{3, 0},
+	{0, 2},
+};
+
 // 4x2 pixel block ordered dither matrix.
 // 0 4 2 6
 // 3 7 1 5

@@ -258,13 +258,13 @@ static int CompareSphereDist(const void* a, const void* b)
 }
 
 static int s_frame_count = 0;
-static int s_temporal_mode = 1;
-#define TEMPORAL_MODE_COUNT 3
+static int s_temporal_mode = 2;
+#define TEMPORAL_MODE_COUNT 4
 
 
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
-	time = 24; // debug
+	//time = 24; // debug
 
 	float cangle = (crank_angle + 68 + time * 20) * M_PIf / 180.0f;
 	float cs = cosf(cangle);
@@ -350,6 +350,39 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		draw_dithered_screen(framebuffer, 0);
 	}
 	if (s_temporal_mode == 2)
+	{
+		// 3x2 block temporal update one pixel per frame
+		float dv = 1.0f / LCD_ROWS;
+		float du = 1.0f / LCD_COLUMNS;
+		float vv = 1.0f - dv * 0.5f;
+		int t_frame_index = s_frame_count % 6;
+		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
+		{
+			int t_row_index = py & 1;
+			int col_offset = g_order_pattern_3x2[t_frame_index][t_row_index] - 1;
+			if (col_offset < 0)
+				continue; // this row does not evaluate any pixels
+
+			float uu = du * 0.5f;
+			float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
+			rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
+
+			int pix_idx = py * LCD_COLUMNS;
+
+			uu += du * col_offset;
+			pix_idx += col_offset;
+			for (int px = col_offset; px < LCD_COLUMNS; px += 3, uu += du * 3, pix_idx += 3)
+			{
+				float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
+				camRay.dir = v3_normalize(rdir);
+
+				int val = trace_ray(&camRay);
+				g_screen_buffer[pix_idx] = val;
+			}
+		}
+		draw_dithered_screen(framebuffer, 0);
+	}
+	if (s_temporal_mode == 3)
 	{
 		// 4x2 block temporal update one pixel per frame
 		float dv = 1.0f / LCD_ROWS;
