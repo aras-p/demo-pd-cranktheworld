@@ -66,6 +66,8 @@ set (DEMO_SOURCES
 
 if (TOOLCHAIN STREQUAL "armgcc")
 	add_executable(${PLAYDATE_GAME_DEVICE} ${DEMO_SOURCES})
+	# leave assembly files in build artifacts
+	target_compile_options(${PLAYDATE_GAME_DEVICE} PRIVATE -save-temps)
 else()
 	add_library(${PLAYDATE_GAME_NAME} SHARED ${DEMO_SOURCES})
 endif()
