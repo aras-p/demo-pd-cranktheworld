@@ -6,13 +6,15 @@
 
 #define TEST_PRETTY_HIP 0 // "Pretty Hip" by Fabrice Neyret https://www.shadertoy.com/view/XsBfRW - 24fps at 2x2t
 #define TEST_XOR_TOWERS 1 // "XOR Towers" by Greg Rostami https://www.shadertoy.com/view/7lsXR2 simplified - 10fps at 2x2t
+#define TEST_SPHERE_FIELD 2 // Somewhat based on "Raymarch 180 chars" by coyote https://www.shadertoy.com/view/llfSzH simplified - 
 
-#define CURRENT_TEST TEST_XOR_TOWERS
+#define CURRENT_TEST TEST_SPHERE_FIELD
 
 typedef struct TraceState
 {
 	float t;
 	float rotmx, rotmy;
+	float camx, camy;
 	float camdist;
 } TraceState;
 
@@ -35,7 +37,7 @@ static int trace_ray(TraceState* st, float x, float y)
 	float b = 0.95f * (e < 0.0f ? v : 1.0f - v) - e * e;
 	float a = smoothstep(-0.05f, 0.0f, b) + s * 0.1f;
 
-	return MIN(255, a * 250.0f);
+	return MIN(255, (int)(a * 250.0f));
 #endif // CURRENT_TEST == TEST_PRETTY_HIP
 
 #if CURRENT_TEST == TEST_XOR_TOWERS
@@ -70,6 +72,29 @@ static int trace_ray(TraceState* st, float x, float y)
 
 #endif // CURRENT_TEST == TEST_XOR_TOWERS
 
+#if CURRENT_TEST == TEST_SPHERE_FIELD
+	float ux = st->rotmy * x + st->rotmx * y;
+	float uy = st->rotmx * x - st->rotmy * y;
+	float3 pos = { st->camx, st->camy, st->camdist };
+	float3 dir = { ux * 1.666f * 0.6f, uy * 1.666f * 0.6f, 2.0f * 0.6f };
+
+	pos = v3_add(pos, dir);
+
+#define MAXSTEP 15
+	int it = 0;
+	for (; it < MAXSTEP; ++it)
+	{
+		float3 rf = v3_subfl(v3_fract(pos), 0.5f);
+		float d = v3_dot(rf, rf) - 0.1f;
+		if (d < 0.01f)
+			break;
+		pos = v3_add(pos, v3_mulfl(dir, d * 1.5f));
+	}
+	return (int)(it * (255.0f / MAXSTEP));
+
+#endif // CURRENT_TEST == TEST_SPHERE_FIELD
+
+
 	return 128;
 }
 
@@ -91,6 +116,14 @@ static int fx_various_test_update(uint32_t buttons_cur, uint32_t buttons_pressed
 	st.rotmx = sinf(r_angle);
 	st.rotmy = cosf(r_angle);
 	st.camdist = 2.0f + cosf(st.t * 1.7f);
+#endif
+#if CURRENT_TEST == TEST_SPHERE_FIELD
+	float r_angle = 0.6f - 0.1f * st.t;
+	st.rotmx = sinf(r_angle);
+	st.rotmy = cosf(r_angle);
+	st.camx = cosf(st.t * 0.3f + 1.66f);
+	st.camy = cosf(st.t * 0.23f + 1.0f);
+	st.camdist = cosf(st.t * 0.11f);
 #endif
 
 	float xsize = 1.0f;
