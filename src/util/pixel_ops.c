@@ -111,7 +111,7 @@ void draw_dithered_scanline(const uint8_t* values, int y, int bias, uint8_t* fra
 	for (int bx = 0; bx < LCD_COLUMNS / 8; ++bx) {
 		uint8_t pixbyte = 0xFF;
 		for (int ib = 0; ib < 8; ++ib, ++px) {
-			if (values[px] <= noise_row[px]) {
+			if (values[px] <= noise_row[px] + bias) {
 				pixbyte &= ~(1 << (7 - ib));
 			}
 		}

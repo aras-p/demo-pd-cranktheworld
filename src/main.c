@@ -73,7 +73,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		s_music = pd->sound->fileplayer->newPlayer();
 		s_music_ok = pd->sound->fileplayer->loadIntoPlayer(s_music, kMusicPath) != 0;
 		if (s_music_ok)
-			pd->sound->fileplayer->play(s_music, 0);
+			pd->sound->fileplayer->play(s_music, 1);
 		else
 			pd->system->error("Could not load music file %s", kMusicPath);
 #endif
@@ -102,6 +102,8 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 	return 0;
 }
 
+static int s_beat_frame_done = -1;
+
 static int update(void* userdata)
 {
 	PDButtons btCur, btPushed, btRel;
@@ -112,10 +114,16 @@ static int update(void* userdata)
 	G.global_time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
 	if (s_music_ok)
-		G.global_time = (float)G.pd->sound->getCurrentTime() / 82687.5f;
+		G.global_time = (float)G.pd->sound->getCurrentTime() / 20671.875f;
 #endif
 	if (G.fx_start_time < 0.0f)
 		G.fx_start_time = G.global_time;
+
+	// "beat" is if during this frame the tick would change
+	int beat_at_end_of_frame = (int)(G.global_time + TIME_LEN_30FPSFRAME);
+	G.beat = true;
+	if (s_beat_frame_done >= beat_at_end_of_frame)
+		G.beat = false;
 
 	if (btPushed & kButtonB) {
 		G.fx_start_time = G.global_time;
@@ -136,22 +144,21 @@ static int update(void* userdata)
 
 	G.pd->graphics->clear(kColorWhite);
 
+	// update the effect
 	int dbg_value = 0;
 	//pd->system->logToConsole("Time: %.1f", pd->system->getElapsedTime());
 	dbg_value = s_effects[s_cur_effect].update();
 
-	// draw FPS indicator and debug value
-	G.pd->graphics->fillRect(0, 0, 40, 32, kColorWhite);
+	s_beat_frame_done = beat_at_end_of_frame;
 
-	char buf[100];
-	buf[0] = dbg_value / 10000 % 10 + '0';
-	buf[1] = dbg_value / 1000 % 10 + '0';
-	buf[2] = dbg_value / 100 % 10 + '0';
-	buf[3] = dbg_value / 10 % 10 + '0';
-	buf[4] = dbg_value / 1 % 10 + '0';
-	buf[5] = 0;
+	// draw FPS, time, debug values
+	G.pd->graphics->fillRect(0, 0, 70, 32, kColorWhite);
+
+	char* buf;
+	int bufLen = G.pd->system->formatString(&buf, "t %i b %i v %i", (int)G.global_time, G.beat, dbg_value);
 	G.pd->graphics->setFont(font);
-	G.pd->graphics->drawText(buf, strlen(buf), kASCIIEncoding, 0, 16);
+	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
+	pd_free(buf);
 
 	G.pd->system->drawFPS(0,0);
 

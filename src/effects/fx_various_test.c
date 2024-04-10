@@ -6,9 +6,9 @@
 
 #define TEST_PRETTY_HIP 0 // "Pretty Hip" by Fabrice Neyret https://www.shadertoy.com/view/XsBfRW - 24fps at 2x2t
 #define TEST_XOR_TOWERS 1 // "XOR Towers" by Greg Rostami https://www.shadertoy.com/view/7lsXR2 simplified - 10fps at 2x2t
-#define TEST_SPHERE_FIELD 2 // Somewhat based on "Raymarch 180 chars" by coyote https://www.shadertoy.com/view/llfSzH simplified - 
+#define TEST_SPHERE_FIELD 2 // Somewhat based on "Raymarch 180 chars" by coyote https://www.shadertoy.com/view/llfSzH simplified - 12fps at 2x2t, 21fps at 4x2t
 
-#define CURRENT_TEST TEST_SPHERE_FIELD
+#define CURRENT_TEST TEST_PRETTY_HIP
 
 typedef struct TraceState
 {
@@ -107,18 +107,20 @@ static int fx_various_test_update()
 	TraceState st;
 	st.t = G.fx_local_time;
 #if CURRENT_TEST == TEST_PRETTY_HIP
-	st.rotmx = 0.7f;//sinf(st.t / 4.0f);
-	st.rotmy = 0.7f;//cosf(st.t / 4.0f);
+	st.t = G.fx_local_time * 0.3f;
+	float r_angle = M_PIf / 4.0f + st.t * 0.1f + G.crank_angle_rad;
+	st.rotmx = sinf(r_angle);
+	st.rotmy = cosf(r_angle);
 #endif
 #if CURRENT_TEST == TEST_XOR_TOWERS
-	st.t = time * 0.1f;
-	float r_angle = 0.6f - 0.1f * st.t;
+	st.t = G.fx_local_time * 0.1f;
+	float r_angle = 0.6f - 0.1f * st.t + G.crank_angle_rad;
 	st.rotmx = sinf(r_angle);
 	st.rotmy = cosf(r_angle);
 	st.camdist = 2.0f + cosf(st.t * 1.7f);
 #endif
 #if CURRENT_TEST == TEST_SPHERE_FIELD
-	float r_angle = 0.6f - 0.1f * st.t;
+	float r_angle = 0.6f - 0.1f * st.t + G.crank_angle_rad;
 	st.rotmx = sinf(r_angle);
 	st.rotmy = cosf(r_angle);
 	st.camx = cosf(st.t * 0.3f + 1.66f);
@@ -132,11 +134,11 @@ static int fx_various_test_update()
 	float dy = ysize / LCD_ROWS;
 
 	float y = ysize / 2 - dy * 0.5f;
-	int t_frame_index = s_frame_count & 3;
+	int t_frame_index = s_frame_count % 8;
 	for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 	{
 		int t_row_index = py & 1;
-		int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
+		int col_offset = g_order_pattern_4x2[t_frame_index][t_row_index] - 1;
 		if (col_offset < 0)
 			continue; // this row does not evaluate any pixels
 
@@ -145,13 +147,13 @@ static int fx_various_test_update()
 
 		x += dx * col_offset;
 		pix_idx += col_offset;
-		for (int px = col_offset; px < LCD_COLUMNS; px += 2, x += dx * 2, pix_idx += 2)
+		for (int px = col_offset; px < LCD_COLUMNS; px += 4, x += dx * 4, pix_idx += 4)
 		{
 			int val = trace_ray(&st, x, y);
 			g_screen_buffer[pix_idx] = val;
 		}
 	}
-	draw_dithered_screen(G.framebuffer, 0);
+	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
 	++s_frame_count;
 	return 0;
 }
