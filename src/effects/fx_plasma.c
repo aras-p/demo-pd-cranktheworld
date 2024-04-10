@@ -26,7 +26,7 @@ static uint16_t s_plasma_pos2;
 static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
 
-static int fx_plasma_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_plasma_update()
 {
 	s_rng = 1;
 	int tpos4 = s_plasma_pos4;
@@ -41,7 +41,7 @@ static int fx_plasma_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 		tpos3 &= TRIG_TABLE_MASK;
 		tpos4 &= TRIG_TABLE_MASK;
 
-		uint8_t* row = framebuffer + py * framebuffer_stride;
+		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
 
 		for (int px = 0; px < LCD_COLUMNS; ++px, ++pix_idx)
 		{
@@ -77,7 +77,7 @@ static int fx_plasma_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 	return 0;
 }
 
-Effect fx_plasma_init(void* pd_api)
+Effect fx_plasma_init()
 {
 	init_sin_table();
 

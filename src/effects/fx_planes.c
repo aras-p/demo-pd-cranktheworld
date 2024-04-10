@@ -113,15 +113,15 @@ static int CompareZ(const void* a, const void* b)
 }
 
 
-static int fx_planes_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_planes_update()
 {
-	if (buttons_cur & kButtonLeft)
+	if (G.buttons_cur & kButtonLeft)
 	{
 		planeCount -= 1;
 		if (planeCount < 1)
 			planeCount = 1;
 	}
-	if (buttons_cur & kButtonRight)
+	if (G.buttons_cur & kButtonRight)
 	{
 		planeCount += 1;
 		if (planeCount > MAX_PLANES)
@@ -130,7 +130,7 @@ static int fx_planes_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 
 	uint32_t rng = 1;
 
-	float cangle = crank_angle * M_PIf / 180.0f;
+	float cangle = G.crank_angle_rad;
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
 	Scene3D_setCamera(&s_scene, (float3) { cs * 8.0f, 3.0f, ss * 8.0f }, (float3) { 0, 0, 0 }, 1.0f, (float3) { 0, -1, 0 });
@@ -167,13 +167,13 @@ static int fx_planes_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 	for (int i = 0; i < planeCount; ++i)
 	{
 		int idx = planeOrder[i];
-		Scene3D_drawShape(&s_scene, framebuffer, framebuffer_stride, &s_shape_plane, &planeXforms[idx], kRenderFilled | kRenderWireframe);
+		Scene3D_drawShape(&s_scene, G.framebuffer, G.framebuffer_stride, &s_shape_plane, &planeXforms[idx], kRenderFilled | kRenderWireframe);
 	}
 
 	return planeCount;
 }
 
-Effect fx_planes_init(void* pd_api)
+Effect fx_planes_init()
 {
 	Scene3D_init(&s_scene);
 	Shape3D_init(&s_shape_plane, sizeof(g_mesh_Cube_vb) / sizeof(g_mesh_Cube_vb[0]), g_mesh_Cube_vb, sizeof(g_mesh_Cube_ib) / sizeof(g_mesh_Cube_ib[0]) / 3, g_mesh_Cube_ib);

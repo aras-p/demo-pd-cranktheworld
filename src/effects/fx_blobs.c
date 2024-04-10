@@ -23,15 +23,15 @@ static void blob_init(Blob* b)
 	b->speed = (RandomFloat01(&s_rng) * 2.0f - 1.0f);
 }
 
-static int fx_blobs_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_blobs_update()
 {
-	if (buttons_pressed & kButtonLeft)
+	if (G.buttons_pressed & kButtonLeft)
 	{
 		s_blob_count--;
 		if (s_blob_count < 1)
 			s_blob_count = 1;
 	}
-	if (buttons_pressed & kButtonRight)
+	if (G.buttons_pressed & kButtonRight)
 	{
 		s_blob_count++;
 		if (s_blob_count > MAX_BLOBS)
@@ -39,6 +39,7 @@ static int fx_blobs_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	}
 
 	// update blobs
+	float time = G.fx_local_time;
 	float offset = 0.0f;
 	for (int i = 0; i < s_blob_count; ++i) {
 		Blob* b = &s_blobs[i];
@@ -54,8 +55,8 @@ static int fx_blobs_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	float scale = 1.0f / (1.0f * powf(10.0f, (float)(3 + s_blob_count * 3)));
 	for (int py = 0; py < LCD_ROWS; py += 2)
 	{
-		uint8_t* row1 = framebuffer + py * framebuffer_stride;
-		uint8_t* row2 = row1 + framebuffer_stride;
+		uint8_t* row1 = G.framebuffer + py * G.framebuffer_stride;
+		uint8_t* row2 = row1 + G.framebuffer_stride;
 		int pix_idx = py * LCD_COLUMNS;
 
 		for (int px = 0; px < LCD_COLUMNS; px += 2, pix_idx += 2)
@@ -92,7 +93,7 @@ static int fx_blobs_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	return s_blob_count;
 }
 
-Effect fx_blobs_init(void* pd_api)
+Effect fx_blobs_init()
 {
 	for (int i = 0; i < s_blob_count; ++i) {
 		blob_init(&s_blobs[0]);

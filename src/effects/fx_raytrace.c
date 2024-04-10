@@ -266,7 +266,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 {
 	//time = 24; // debug
 
-	float cangle = (crank_angle + 68 + time * 20) * M_PIf / 180.0f;
+	float cangle = crank_angle + (68 + time * 20) * (M_PIf / 180.0f);
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
 	float dist = 4.0f;
@@ -420,27 +420,27 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 }
 
 
-static int fx_raytrace_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_raytrace_update()
 {
-	if (buttons_pressed & kButtonLeft)
+	if (G.buttons_pressed & kButtonLeft)
 	{
 		s_temporal_mode--;
 		if (s_temporal_mode < 0)
 			s_temporal_mode = TEMPORAL_MODE_COUNT - 1;
 	}
-	if (buttons_pressed & kButtonRight)
+	if (G.buttons_pressed & kButtonRight)
 	{
 		s_temporal_mode++;
 		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
 			s_temporal_mode = 0;
 	}
 
-	do_render(crank_angle, time, framebuffer, framebuffer_stride);
+	do_render(G.crank_angle_rad, G.fx_local_time, G.framebuffer, G.framebuffer_stride);
 
 	return s_temporal_mode;
 }
 
-Effect fx_raytrace_init(void* pd_api)
+Effect fx_raytrace_init()
 {
 	s_LightDir = v3_normalize((float3) { 0.8f, 1.0f, 0.6f });
 	return (Effect) {fx_raytrace_update};

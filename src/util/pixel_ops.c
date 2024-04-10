@@ -2,6 +2,7 @@
 #include "image_loader.h"
 
 #include "../allocator.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 
@@ -91,10 +92,10 @@ int g_order_pattern_4x4[16][4] = {
 	{4, 0, 0, 0},
 };
 
-void init_blue_noise(void* pd_api)
+void init_blue_noise()
 {
 	int bn_w, bn_h;
-	g_blue_noise = read_tga_file_grayscale("BlueNoise.tga", pd_api, &bn_w, &bn_h);
+	g_blue_noise = read_tga_file_grayscale("BlueNoise.tga", G.pd, &bn_w, &bn_h);
 	if (bn_w != LCD_COLUMNS || bn_h != LCD_ROWS) {
 		pd_free(g_blue_noise);
 		g_blue_noise = NULL;

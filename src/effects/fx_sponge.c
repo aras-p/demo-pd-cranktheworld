@@ -74,8 +74,9 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	st.pos.x = 0.0f;
 	st.pos.y = 0.0f;
 	st.pos.z = st.t;
-	st.rotmx = sinf(st.t / 4.0f);
-	st.rotmy = cosf(st.t / 4.0f);
+	float rot_a = st.t / 4.0f + crank_angle;
+	st.rotmx = sinf(rot_a);
+	st.rotmy = cosf(rot_a);
 
 	float xsize = 3.3333f;
 	float ysize = 2.0f;
@@ -166,26 +167,26 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	++s_frame_count;
 }
 
-static int fx_sponge_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_sponge_update()
 {
-	if (buttons_pressed & kButtonLeft)
+	if (G.buttons_pressed & kButtonLeft)
 	{
 		s_temporal_mode--;
 		if (s_temporal_mode < 0)
 			s_temporal_mode = TEMPORAL_MODE_COUNT - 1;
 	}
-	if (buttons_pressed & kButtonRight)
+	if (G.buttons_pressed & kButtonRight)
 	{
 		s_temporal_mode++;
 		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
 			s_temporal_mode = 0;
 	}
 
-	do_render(crank_angle, time, framebuffer, framebuffer_stride);
+	do_render(G.crank_angle_rad, G.fx_local_time, G.framebuffer, G.framebuffer_stride);
 	return s_temporal_mode;
 }
 
-Effect fx_sponge_init(void* pd_api)
+Effect fx_sponge_init()
 {
 	return (Effect) { fx_sponge_update };
 }

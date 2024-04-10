@@ -33,6 +33,8 @@ project(${PLAYDATE_GAME_NAME} C ASM)
 set (DEMO_SOURCES
 	src/allocator.c
 	src/allocator.h
+	src/globals.c
+	src/globals.h
 	src/main.c
 	src/mathlib.c
 	src/mathlib.h

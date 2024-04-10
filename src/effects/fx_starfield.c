@@ -24,26 +24,26 @@ static void star_init(Star* s, uint32_t* rng)
 	s->speed = RandomFloat01(rng) * 70 + 30;
 }
 
-static int fx_stars_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_stars_update()
 {
 	const int kStep = 251;
-	if (buttons_cur & kButtonLeft)
+	if (G.buttons_cur & kButtonLeft)
 	{
 		s_star_count -= kStep;
 		if (s_star_count < 50)
 			s_star_count = 50;
 	}
-	if (buttons_cur & kButtonRight)
+	if (G.buttons_cur & kButtonRight)
 	{
 		s_star_count += kStep;
 		if (s_star_count > MAX_STARS)
 			s_star_count = MAX_STARS;
 	}
 
-	float dt = time - s_prev_time;
+	float dt = G.fx_local_time - s_prev_time;
 	if (s_prev_time < 0)
 		dt = 0;
-	s_prev_time = time;
+	s_prev_time = G.fx_local_time;
 
 	for (int i = 0; i < s_star_count; ++i)
 	{
@@ -64,14 +64,14 @@ static int fx_stars_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 			continue;
 		}
 
-		uint8_t* row = framebuffer + py * framebuffer_stride;
+		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
 		put_pixel_black(row, px);
 	}
 
 	return s_star_count;
 }
 
-Effect fx_starfield_init(void* pd_api)
+Effect fx_starfield_init()
 {
 	for (int i = 0; i < s_star_count; ++i) {
 		star_init(&s_stars[i], &s_rng);

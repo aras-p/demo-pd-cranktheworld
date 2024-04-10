@@ -46,18 +46,18 @@ static int s_pattern_4x4_8[8][4] = {
 };
 
 static int s_frame_count = 0;
-static int s_temporal_mode = 0;
+static int s_temporal_mode = 2;
 #define TEMPORAL_MODE_COUNT 8
 
-static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_temporal_test_update()
 {
-	if (buttons_pressed & kButtonLeft)
+	if (G.buttons_pressed & kButtonLeft)
 	{
 		s_temporal_mode--;
 		if (s_temporal_mode < 0)
 			s_temporal_mode = TEMPORAL_MODE_COUNT-1;
 	}
-	if (buttons_pressed & kButtonRight)
+	if (G.buttons_pressed & kButtonRight)
 	{
 		s_temporal_mode++;
 		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
@@ -65,9 +65,9 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 	}
 
 	TraceState st;
-	st.t = time;
+	st.t = G.fx_local_time;
 	float rot_angle = st.t / 4.0f;
-	rot_angle = crank_angle * M_PIf / 180.0f;
+	rot_angle = G.crank_angle_rad;
 	st.rotmx = sinf(rot_angle);
 	st.rotmy = cosf(rot_angle);
 
@@ -90,7 +90,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen(framebuffer, 0);
+		draw_dithered_screen(G.framebuffer, 0);
 	}
 	if (s_temporal_mode == 1)
 	{
@@ -106,7 +106,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen_2x2(framebuffer, 1);
+		draw_dithered_screen_2x2(G.framebuffer, 1);
 	}
 	if (s_temporal_mode == 2)
 	{
@@ -135,7 +135,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 		}
 
 		memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS / 2 * LCD_ROWS / 2);
-		draw_dithered_screen_2x2(framebuffer, 1);
+		draw_dithered_screen_2x2(G.framebuffer, 1);
 	}
 	if (s_temporal_mode == 3)
 	{
@@ -160,7 +160,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen(framebuffer, 0);
+		draw_dithered_screen(G.framebuffer, 0);
 	}
 	if (s_temporal_mode == 4)
 	{
@@ -197,7 +197,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen(framebuffer, 0);
+		draw_dithered_screen(G.framebuffer, 0);
 	}
 	if (s_temporal_mode == 5)
 	{
@@ -235,7 +235,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen(framebuffer, 0);
+		draw_dithered_screen(G.framebuffer, 0);
 	}
 	if (s_temporal_mode == 6)
 	{
@@ -277,7 +277,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen(framebuffer, 0);
+		draw_dithered_screen(G.framebuffer, 0);
 	}
 	if (s_temporal_mode == 7)
 	{
@@ -324,7 +324,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 				g_screen_buffer[pix_idx] = val;
 			}
 		}
-		draw_dithered_screen(framebuffer, 0);
+		draw_dithered_screen(G.framebuffer, 0);
 	}
 
 
@@ -333,7 +333,7 @@ static int fx_temporal_test_update(uint32_t buttons_cur, uint32_t buttons_presse
 	return s_temporal_mode;
 }
 
-Effect fx_temporal_test_init(void* pd_api)
+Effect fx_temporal_test_init()
 {
 	return (Effect) { fx_temporal_test_update };
 }

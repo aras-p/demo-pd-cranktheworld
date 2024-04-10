@@ -4,18 +4,18 @@
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
-static int fx_moire_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_moire_update()
 {
-
-	float cx1 = sinf(time / 2) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;
-	float cy1 = sinf(time / 4) * LCD_ROWS / 3 + LCD_ROWS / 2;
-	float cx2 = cosf(time / 3) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;
-	float cy2 = cosf(time) * LCD_ROWS / 3 + LCD_ROWS / 2;
+	float t = G.fx_local_time;
+	float cx1 = sinf(t / 2) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;
+	float cy1 = sinf(t / 4) * LCD_ROWS / 3 + LCD_ROWS / 2;
+	float cx2 = cosf(t / 3) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;
+	float cy2 = cosf(t) * LCD_ROWS / 3 + LCD_ROWS / 2;
 
 	int pix_idx = 0;
 	for (int py = 0; py < LCD_ROWS; ++py)
 	{
-		uint8_t* row = framebuffer + py * framebuffer_stride;
+		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
 
 		float dy1 = py - cy1; dy1 *= dy1;
 		float dy2 = py - cy2; dy2 *= dy2;
@@ -35,7 +35,7 @@ static int fx_moire_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	return 0;
 }
 
-Effect fx_moire_init(void* pd_api)
+Effect fx_moire_init()
 {
 	return (Effect) {fx_moire_update};
 }

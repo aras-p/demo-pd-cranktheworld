@@ -102,10 +102,10 @@ static int trace_ray(TraceState* st, float x, float y)
 
 static int s_frame_count = 0;
 
-static int fx_various_test_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_various_test_update()
 {
 	TraceState st;
-	st.t = time;
+	st.t = G.fx_local_time;
 #if CURRENT_TEST == TEST_PRETTY_HIP
 	st.rotmx = 0.7f;//sinf(st.t / 4.0f);
 	st.rotmy = 0.7f;//cosf(st.t / 4.0f);
@@ -151,12 +151,12 @@ static int fx_various_test_update(uint32_t buttons_cur, uint32_t buttons_pressed
 			g_screen_buffer[pix_idx] = val;
 		}
 	}
-	draw_dithered_screen(framebuffer, 0);
+	draw_dithered_screen(G.framebuffer, 0);
 	++s_frame_count;
 	return 0;
 }
 
-Effect fx_various_test_init(void* pd_api)
+Effect fx_various_test_init()
 {
 	return (Effect) { fx_various_test_update };
 }

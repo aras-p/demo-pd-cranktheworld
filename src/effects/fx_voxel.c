@@ -12,11 +12,11 @@
 static uint8_t* s_heightmap;
 static uint8_t* s_heightmap_color;
 
-static void init_heightmap(void* pd_api)
+static void init_heightmap()
 {
 	int img_w, img_h;
-	s_heightmap = read_tga_file_grayscale("Heightmap.tga", pd_api, &img_w, &img_h);
-	s_heightmap_color = read_tga_file_grayscale("HeightmapColor.tga", pd_api, &img_w, &img_h);
+	s_heightmap = read_tga_file_grayscale("Heightmap.tga", G.pd, &img_w, &img_h);
+	s_heightmap_color = read_tga_file_grayscale("HeightmapColor.tga", G.pd, &img_w, &img_h);
 }
 
 typedef struct Camera {
@@ -28,30 +28,30 @@ typedef struct Camera {
 
 static Camera s_camera = { {128,60,78}, 0, 100, 200 };
 
-static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_voxel_update()
 {
-	s_camera.angle = crank_angle * M_PIf / 180.0f;
+	s_camera.angle = G.crank_angle_rad;
 
 	float cam_sin = sinf(s_camera.angle);
 	float cam_cos = cosf(s_camera.angle);
 
-	if (buttons_cur & kButtonUp)
+	if (G.buttons_cur & kButtonUp)
 	{
 		s_camera.pos.x += cam_sin * 1.1f;
 		s_camera.pos.z += cam_cos * 1.1f;
 	}
-	if (buttons_cur & kButtonDown)
+	if (G.buttons_cur & kButtonDown)
 	{
 		s_camera.pos.x -= cam_sin * 1.1f;
 		s_camera.pos.z -= cam_cos * 1.1f;
 	}
-	if (buttons_cur & kButtonLeft)
+	if (G.buttons_cur & kButtonLeft)
 	{
 		s_camera.distance -= 1;
 		if (s_camera.distance < 20)
 			s_camera.distance = 20;
 	}
-	if (buttons_cur & kButtonRight)
+	if (G.buttons_cur & kButtonRight)
 	{
 		s_camera.distance += 1;
 		if (s_camera.distance > 1000)
@@ -113,13 +113,13 @@ static int fx_voxel_update(uint32_t buttons_cur, uint32_t buttons_pressed, float
 	}
 
 	for (int y = 0; y < LCD_ROWS; ++y) {
-		draw_dithered_scanline(&g_screen_buffer[y * LCD_COLUMNS], y, 0, framebuffer);
+		draw_dithered_scanline(&g_screen_buffer[y * LCD_COLUMNS], y, 0, G.framebuffer);
 	}
 	return 0;
 }
 
-Effect fx_voxel_init(void* pd_api)
+Effect fx_voxel_init()
 {
-	init_heightmap(pd_api);
+	init_heightmap();
 	return (Effect) {fx_voxel_update};
 }

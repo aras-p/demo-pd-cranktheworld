@@ -11,15 +11,15 @@ static int s_bar_count = 120;
 #define BAR_WIDTH (17)
 static uint8_t kBarColors[BAR_WIDTH] = {5, 50, 96, 134, 165, 189, 206, 216, 220, 216, 206, 189, 165, 134, 96, 50, 5};
 
-static int fx_kefren_update(uint32_t buttons_cur, uint32_t buttons_pressed, float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static int fx_kefren_update()
 {
-	if (buttons_cur & kButtonLeft)
+	if (G.buttons_cur & kButtonLeft)
 	{
 		s_bar_count--;
 		if (s_bar_count < 50)
 			s_bar_count = 50;
 	}
-	if (buttons_cur & kButtonRight)
+	if (G.buttons_cur & kButtonRight)
 	{
 		s_bar_count++;
 		if (s_bar_count > MAX_BARS)
@@ -32,6 +32,7 @@ static int fx_kefren_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 	const float kSinStep1 = 0.093f;
 	const float kSinStep2 = -0.063f;
 
+	float time = G.fx_local_time;
 	float bar_step = (float)s_bar_count / (float)LCD_ROWS;
 	int prev_bar_idx = -1;
 	float bar_idx = 0.0f;
@@ -49,12 +50,12 @@ static int fx_kefren_update(uint32_t buttons_cur, uint32_t buttons_pressed, floa
 		}
 
 		int dither_bias = 50 - (LCD_ROWS - py) / 2; // fade to white near top, more black at bottom
-		draw_dithered_scanline(bar_line, py, dither_bias, framebuffer);
+		draw_dithered_scanline(bar_line, py, dither_bias, G.framebuffer);
 	}
 	return s_bar_count;
 }
 
-Effect fx_kefren_init(void* pd_api)
+Effect fx_kefren_init()
 {
 	return (Effect) {fx_kefren_update};
 }
