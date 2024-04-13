@@ -49,6 +49,7 @@ LCDFont* font = NULL;
 #if PLAY_MUSIC
 static const char* kMusicPath = "music.pda";
 static FilePlayer* s_music;
+//static int32_t s_music_offset_samples;
 static bool s_music_ok;
 #endif
 
@@ -114,8 +115,27 @@ static int update(void* userdata)
 	G.global_time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
 	if (s_music_ok)
-		G.global_time = (float)G.pd->sound->getCurrentTime() / 20671.875f;
+	{
+		//G.global_time = (float)G.pd->sound->getCurrentTime() / 20671.875f;
+
+		// Up/Down seek in time
+		if (btPushed & kButtonUp) {
+			float offset = G.pd->sound->fileplayer->getOffset(s_music);
+			offset -= 5.0f;
+			offset = MAX(0, offset);
+			G.pd->sound->fileplayer->setOffset(s_music, offset);
+		}
+		if (btPushed & kButtonDown) {
+			float offset = G.pd->sound->fileplayer->getOffset(s_music);
+			offset += 5.0f;
+			offset = MAX(0, offset);
+			G.pd->sound->fileplayer->setOffset(s_music, offset);
+		}
+		G.global_time = G.pd->sound->fileplayer->getOffset(s_music) / TIME_UNIT_LENGTH_SECONDS;
+	}
 #endif
+
+
 	if (G.fx_start_time < 0.0f)
 		G.fx_start_time = G.global_time;
 
@@ -125,6 +145,7 @@ static int update(void* userdata)
 	if (s_beat_frame_done >= beat_at_end_of_frame)
 		G.beat = false;
 
+	// A/B switch between effects
 	if (btPushed & kButtonB) {
 		G.fx_start_time = G.global_time;
 		s_cur_effect--;
