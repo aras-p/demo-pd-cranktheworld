@@ -39,7 +39,7 @@ static int fx_blobs_update()
 	}
 
 	// update blobs
-	float time = G.fx_local_time;
+	float time = G.time;
 	float offset = 0.0f;
 	for (int i = 0; i < s_blob_count; ++i) {
 		Blob* b = &s_blobs[i];

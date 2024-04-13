@@ -6,7 +6,7 @@
 
 static int fx_moire_update()
 {
-	float t = G.fx_local_time;
+	float t = G.time;
 	float cx1 = sinf(t / 2) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;
 	float cy1 = sinf(t / 4) * LCD_ROWS / 3 + LCD_ROWS / 2;
 	float cx2 = cosf(t / 3) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;

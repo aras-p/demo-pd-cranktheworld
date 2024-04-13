@@ -182,7 +182,7 @@ static int fx_sponge_update()
 			s_temporal_mode = 0;
 	}
 
-	do_render(G.crank_angle_rad, G.fx_local_time, G.framebuffer, G.framebuffer_stride);
+	do_render(G.crank_angle_rad, G.time, G.framebuffer, G.framebuffer_stride);
 	return s_temporal_mode;
 }
 

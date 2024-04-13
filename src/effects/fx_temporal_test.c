@@ -65,7 +65,7 @@ static int fx_temporal_test_update()
 	}
 
 	TraceState st;
-	st.t = G.fx_local_time;
+	st.t = G.time;
 	float rot_angle = st.t / 4.0f;
 	rot_angle = G.crank_angle_rad;
 	st.rotmx = sinf(rot_angle);

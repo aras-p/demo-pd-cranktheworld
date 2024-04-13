@@ -32,7 +32,7 @@ static int fx_kefren_update()
 	const float kSinStep1 = 0.093f;
 	const float kSinStep2 = -0.063f;
 
-	float time = G.fx_local_time;
+	float time = G.time;
 	float bar_step = (float)s_bar_count / (float)LCD_ROWS;
 	int prev_bar_idx = -1;
 	float bar_idx = 0.0f;

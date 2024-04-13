@@ -14,9 +14,7 @@ typedef struct Globals
 	PlaydateAPI* pd;
 
 	// time: all units in music beats (1.0 = 1 beat = 0.46875s; 4.0 = 1 bar = 1.875s)
-	float global_time; // current global time
-	float fx_start_time; // global time when current effect started
-	float fx_local_time; // time since start of current effect/scene
+	float time; // current global time
 	bool beat; // is current frame on the "beat"
 
 	// screen

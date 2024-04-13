@@ -105,15 +105,15 @@ static int s_frame_count = 0;
 static int fx_various_test_update()
 {
 	TraceState st;
-	st.t = G.fx_local_time;
+	st.t = G.time;
 #if CURRENT_TEST == TEST_PRETTY_HIP
-	st.t = G.fx_local_time * 0.3f;
+	st.t = G.time * 0.3f;
 	float r_angle = M_PIf / 4.0f + st.t * 0.1f + G.crank_angle_rad;
 	st.rotmx = sinf(r_angle);
 	st.rotmy = cosf(r_angle);
 #endif
 #if CURRENT_TEST == TEST_XOR_TOWERS
-	st.t = G.fx_local_time * 0.1f;
+	st.t = G.time * 0.1f;
 	float r_angle = 0.6f - 0.1f * st.t + G.crank_angle_rad;
 	st.rotmx = sinf(r_angle);
 	st.rotmy = cosf(r_angle);

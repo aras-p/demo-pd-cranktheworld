@@ -25,7 +25,7 @@ typedef enum
 
 static Effect s_effects[kFxCount];
 
-static EffectType s_cur_effect = kFxVariousTest;
+static EffectType s_cur_effect = kFxStarfield;
 
 Effect fx_planes_init();
 Effect fx_starfield_init();
@@ -62,9 +62,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 	{
 		const char* err;
 		G.pd = pd;
-		G.global_time = 0;
-		G.fx_local_time = 0;
-		G.fx_start_time = -1.0f;
+		G.time = -1.0f;
 		font = pd->graphics->loadFont(fontpath, &err);	
 		if (font == NULL)
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
@@ -105,6 +103,40 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 
 static int s_beat_frame_done = -1;
 
+static int track_current_time()
+{
+	G.time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
+#if PLAY_MUSIC
+	if (s_music_ok)
+	{
+		//G.time = (float)G.pd->sound->getCurrentTime() / 20671.875f;
+
+		// Up/Down seek in time
+		if (G.buttons_pressed & kButtonUp) {
+			float offset = G.pd->sound->fileplayer->getOffset(s_music);
+			offset -= 5.0f;
+			offset = MAX(0, offset);
+			G.pd->sound->fileplayer->setOffset(s_music, offset);
+		}
+		if (G.buttons_pressed & kButtonDown) {
+			float offset = G.pd->sound->fileplayer->getOffset(s_music);
+			offset += 5.0f;
+			offset = MAX(0, offset);
+			G.pd->sound->fileplayer->setOffset(s_music, offset);
+		}
+		G.time = G.pd->sound->fileplayer->getOffset(s_music) / TIME_UNIT_LENGTH_SECONDS;
+	}
+#endif
+
+
+	// "beat" is if during this frame the tick would change
+	int beat_at_end_of_frame = (int)(G.time + TIME_LEN_30FPSFRAME);
+	G.beat = true;
+	if (s_beat_frame_done >= beat_at_end_of_frame)
+		G.beat = false;
+	return beat_at_end_of_frame;
+}
+
 static int update(void* userdata)
 {
 	PDButtons btCur, btPushed, btRel;
@@ -112,54 +144,20 @@ static int update(void* userdata)
 	G.buttons_cur = btCur;
 	G.buttons_pressed = btPushed;
 	G.crank_angle_rad = G.pd->system->getCrankAngle() * (M_PIf / 180.0f);
-	G.global_time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
-#if PLAY_MUSIC
-	if (s_music_ok)
-	{
-		//G.global_time = (float)G.pd->sound->getCurrentTime() / 20671.875f;
-
-		// Up/Down seek in time
-		if (btPushed & kButtonUp) {
-			float offset = G.pd->sound->fileplayer->getOffset(s_music);
-			offset -= 5.0f;
-			offset = MAX(0, offset);
-			G.pd->sound->fileplayer->setOffset(s_music, offset);
-		}
-		if (btPushed & kButtonDown) {
-			float offset = G.pd->sound->fileplayer->getOffset(s_music);
-			offset += 5.0f;
-			offset = MAX(0, offset);
-			G.pd->sound->fileplayer->setOffset(s_music, offset);
-		}
-		G.global_time = G.pd->sound->fileplayer->getOffset(s_music) / TIME_UNIT_LENGTH_SECONDS;
-	}
-#endif
-
-
-	if (G.fx_start_time < 0.0f)
-		G.fx_start_time = G.global_time;
-
-	// "beat" is if during this frame the tick would change
-	int beat_at_end_of_frame = (int)(G.global_time + TIME_LEN_30FPSFRAME);
-	G.beat = true;
-	if (s_beat_frame_done >= beat_at_end_of_frame)
-		G.beat = false;
+	int beat_at_end_of_frame = track_current_time();
 
 	// A/B switch between effects
 	if (btPushed & kButtonB) {
-		G.fx_start_time = G.global_time;
 		s_cur_effect--;
 		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
 			s_cur_effect = kFxCount-1;
 	}
 	if (btPushed & kButtonA) {
-		G.fx_start_time = G.global_time;
 		s_cur_effect++;
 		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
 			s_cur_effect = 0;
 	}
 
-	G.fx_local_time = G.global_time - G.fx_start_time;
 	G.framebuffer = G.pd->graphics->getFrame();
 	G.framebuffer_stride = LCD_ROWSIZE;
 
@@ -176,7 +174,7 @@ static int update(void* userdata)
 	G.pd->graphics->fillRect(0, 0, 70, 32, kColorWhite);
 
 	char* buf;
-	int bufLen = G.pd->system->formatString(&buf, "t %i b %i v %i", (int)G.global_time, G.beat, dbg_value);
+	int bufLen = G.pd->system->formatString(&buf, "t %i b %i v %i", (int)G.time, G.beat, dbg_value);
 	G.pd->graphics->setFont(font);
 	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
 	pd_free(buf);

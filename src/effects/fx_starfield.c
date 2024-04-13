@@ -21,7 +21,7 @@ static void star_init(Star* s, uint32_t* rng)
 	s->pos.x = RandomFloat01(rng) * 30000.0f - 15000.0f;
 	s->pos.y = RandomFloat01(rng) * 30000.0f - 15000.0f;
 	s->pos.z = RandomFloat01(rng) * 100 + 1;
-	s->speed = RandomFloat01(rng) * 70 + 30;
+	s->speed = RandomFloat01(rng) * 35 + 10;
 }
 
 static int fx_stars_update()
@@ -40,10 +40,10 @@ static int fx_stars_update()
 			s_star_count = MAX_STARS;
 	}
 
-	float dt = G.fx_local_time - s_prev_time;
+	float dt = G.time - s_prev_time;
 	if (s_prev_time < 0)
 		dt = 0;
-	s_prev_time = G.fx_local_time;
+	s_prev_time = G.time;
 
 	for (int i = 0; i < s_star_count; ++i)
 	{
@@ -66,6 +66,12 @@ static int fx_stars_update()
 
 		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
 		put_pixel_black(row, px);
+		if (G.beat) {
+			if (px > 1)
+				put_pixel_black(row, px - 1);
+			if (px < LCD_COLUMNS-1)
+				put_pixel_black(row, px + 1);
+		}
 	}
 
 	return s_star_count;
