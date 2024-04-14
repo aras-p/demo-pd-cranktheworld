@@ -92,7 +92,7 @@ int g_order_pattern_4x4[16][4] = {
 	{4, 0, 0, 0},
 };
 
-void init_blue_noise()
+void init_pixel_ops()
 {
 	int bn_w, bn_h;
 	g_blue_noise = read_tga_file_grayscale("BlueNoise.tga", G.pd, &bn_w, &bn_h);
@@ -100,6 +100,9 @@ void init_blue_noise()
 		pd_free(g_blue_noise);
 		g_blue_noise = NULL;
 	}
+
+	memset(g_screen_buffer, 0xFF, sizeof(g_screen_buffer));
+	memset(g_screen_buffer_2x2sml, 0xFF, sizeof(g_screen_buffer_2x2sml));
 }
 
 

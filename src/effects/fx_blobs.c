@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -23,7 +23,7 @@ static void blob_init(Blob* b)
 	b->speed = (RandomFloat01(&s_rng) * 2.0f - 1.0f);
 }
 
-static int fx_blobs_update()
+int fx_blobs_update()
 {
 	if (G.buttons_pressed & kButtonLeft)
 	{
@@ -93,11 +93,9 @@ static int fx_blobs_update()
 	return s_blob_count;
 }
 
-Effect fx_blobs_init()
+void fx_blobs_init()
 {
 	for (int i = 0; i < s_blob_count; ++i) {
 		blob_init(&s_blobs[0]);
 	}
-
-	return (Effect) {fx_blobs_update};
 }

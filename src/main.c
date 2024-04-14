@@ -1,44 +1,12 @@
 
-#include "effects/fx.h"
 
 #include "pd_api.h"
-#include "mathlib.h"
+
 #include "allocator.h"
+#include "effects/fx.h"
+#include "globals.h"
+#include "mathlib.h"
 #include "util/pixel_ops.h"
-
-typedef enum
-{
-	kFxPlanes = 0,
-	kFxStarfield,
-	kFxPlasma,
-	kFxBlobs,
-	kFxMoire,
-	kFxRaytrace,
-	kFxKefren,
-	kFxVoxel,
-	kFxPuls,
-	kFxSponge,
-	kFxTemporalTest,
-	kFxVariousTest,
-	kFxCount,
-} EffectType;
-
-static Effect s_effects[kFxCount];
-
-static EffectType s_cur_effect = kFxStarfield;
-
-Effect fx_planes_init();
-Effect fx_starfield_init();
-Effect fx_plasma_init();
-Effect fx_blobs_init();
-Effect fx_moire_init();
-Effect fx_raytrace_init();
-Effect fx_kefren_init();
-Effect fx_voxel_init();
-Effect fx_puls_init();
-Effect fx_sponge_init();
-Effect fx_temporal_test_init();
-Effect fx_various_test_init();
 
 static int update(void* userdata);
 
@@ -79,20 +47,13 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 
 		pd_realloc = pd->system->realloc;
 
-		init_blue_noise();
-
-		s_effects[kFxPlanes] = fx_planes_init();
-		s_effects[kFxStarfield] = fx_starfield_init();
-		s_effects[kFxPlasma] = fx_plasma_init();
-		s_effects[kFxBlobs] = fx_blobs_init();
-		s_effects[kFxMoire] = fx_moire_init();
-		s_effects[kFxRaytrace] = fx_raytrace_init();
-		s_effects[kFxKefren] = fx_kefren_init();
-		s_effects[kFxVoxel] = fx_voxel_init();
-		s_effects[kFxPuls] = fx_puls_init();
-		s_effects[kFxSponge] = fx_sponge_init();
-		s_effects[kFxTemporalTest] = fx_temporal_test_init();
-		s_effects[kFxVariousTest] = fx_various_test_init();
+		init_pixel_ops();
+		fx_blobs_init();
+		fx_planes_init();
+		fx_plasma_init();
+		fx_raytrace_init();
+		fx_starfield_init();
+		fx_voxel_init();
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);
@@ -137,48 +98,60 @@ static int track_current_time()
 	return beat_at_end_of_frame;
 }
 
+static int update_effect()
+{
+#if 0
+	// A/B switch between effects
+	if (G.buttons_pressed & kButtonB) {
+		s_cur_effect--;
+		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
+			s_cur_effect = kFxCount - 1;
+	}
+	if (G.buttons_pressed & kButtonA) {
+		s_cur_effect++;
+		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
+			s_cur_effect = 0;
+	}
+#endif
+
+	int dbg_val = 0;
+	float t = G.time;
+	if (t < 32)
+		dbg_val = fx_starfield_update();
+	else if (t < 64)
+		dbg_val = fx_prettyhip_update();
+	else
+		dbg_val = fx_sponge_update();
+	return dbg_val;
+}
+
 static int update(void* userdata)
 {
+	// track inputs and time
 	PDButtons btCur, btPushed, btRel;
 	G.pd->system->getButtonState(&btCur, &btPushed, &btRel);
 	G.buttons_cur = btCur;
 	G.buttons_pressed = btPushed;
 	G.crank_angle_rad = G.pd->system->getCrankAngle() * (M_PIf / 180.0f);
-	int beat_at_end_of_frame = track_current_time();
 
-	// A/B switch between effects
-	if (btPushed & kButtonB) {
-		s_cur_effect--;
-		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
-			s_cur_effect = kFxCount-1;
-	}
-	if (btPushed & kButtonA) {
-		s_cur_effect++;
-		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
-			s_cur_effect = 0;
-	}
+	int beat_at_end_of_frame = track_current_time();
 
 	G.framebuffer = G.pd->graphics->getFrame();
 	G.framebuffer_stride = LCD_ROWSIZE;
-
-	G.pd->graphics->clear(kColorWhite);
+	G.pd->graphics->clear(kColorWhite); //@TODO: skip if not needed
 
 	// update the effect
-	int dbg_value = 0;
-	//pd->system->logToConsole("Time: %.1f", pd->system->getElapsedTime());
-	dbg_value = s_effects[s_cur_effect].update();
+	int dbg_value = update_effect();
 
 	s_beat_frame_done = beat_at_end_of_frame;
 
 	// draw FPS, time, debug values
 	G.pd->graphics->fillRect(0, 0, 70, 32, kColorWhite);
-
 	char* buf;
 	int bufLen = G.pd->system->formatString(&buf, "t %i b %i v %i", (int)G.time, G.beat, dbg_value);
 	G.pd->graphics->setFont(font);
 	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
 	pd_free(buf);
-
 	G.pd->system->drawFPS(0,0);
 
 	return 1;

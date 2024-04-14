@@ -1,14 +1,13 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
-#define TEST_PRETTY_HIP 0 // "Pretty Hip" by Fabrice Neyret https://www.shadertoy.com/view/XsBfRW - 24fps at 2x2t
 #define TEST_XOR_TOWERS 1 // "XOR Towers" by Greg Rostami https://www.shadertoy.com/view/7lsXR2 simplified - 10fps at 2x2t
 #define TEST_SPHERE_FIELD 2 // Somewhat based on "Raymarch 180 chars" by coyote https://www.shadertoy.com/view/llfSzH simplified - 12fps at 2x2t, 21fps at 4x2t
 
-#define CURRENT_TEST TEST_PRETTY_HIP
+#define CURRENT_TEST TEST_SPHERE_FIELD
 
 typedef struct TraceState
 {
@@ -20,26 +19,6 @@ typedef struct TraceState
 
 static int trace_ray(TraceState* st, float x, float y)
 {
-#if CURRENT_TEST == TEST_PRETTY_HIP
-	float ux = st->rotmy * x + st->rotmx * y;
-	float uy = st->rotmx * x - st->rotmy * y;
-	ux = ux * 10.0f + 5.0f;
-	uy = uy * 10.0f + 5.0f;
-	float fx = fract(ux);
-	float fy = fract(uy);
-	fx = MIN(fx, 1.0f - fx);
-	fy = MIN(fy, 1.0f - fy);
-	float cx = ceilf(ux) - 5.5f;
-	float cy = ceilf(uy) - 5.5f;
-	float s = sqrtf(cx * cx + cy * cy);
-	float e = 2.0f * fract((st->t - s * 0.5f) * 0.25f) - 1.0f;
-	float v = fract(4.0f * MIN(fx, fy));
-	float b = 0.95f * (e < 0.0f ? v : 1.0f - v) - e * e;
-	float a = smoothstep(-0.05f, 0.0f, b) + s * 0.1f;
-
-	return MIN(255, (int)(a * 250.0f));
-#endif // CURRENT_TEST == TEST_PRETTY_HIP
-
 #if CURRENT_TEST == TEST_XOR_TOWERS
 	float ux = st->rotmy * x + st->rotmx * y;
 	float uy = st->rotmx * x - st->rotmy * y;
@@ -102,16 +81,10 @@ static int trace_ray(TraceState* st, float x, float y)
 
 static int s_frame_count = 0;
 
-static int fx_various_test_update()
+int fx_various_test_update()
 {
 	TraceState st;
 	st.t = G.time;
-#if CURRENT_TEST == TEST_PRETTY_HIP
-	st.t = G.time * 0.3f;
-	float r_angle = M_PIf / 4.0f + st.t * 0.1f + G.crank_angle_rad;
-	st.rotmx = sinf(r_angle);
-	st.rotmy = cosf(r_angle);
-#endif
 #if CURRENT_TEST == TEST_XOR_TOWERS
 	st.t = G.time * 0.1f;
 	float r_angle = 0.6f - 0.1f * st.t + G.crank_angle_rad;
@@ -156,9 +129,4 @@ static int fx_various_test_update()
 	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
 	++s_frame_count;
 	return 0;
-}
-
-Effect fx_various_test_init()
-{
-	return (Effect) { fx_various_test_update };
 }

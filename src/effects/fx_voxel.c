@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -28,7 +28,7 @@ typedef struct Camera {
 
 static Camera s_camera = { {128,60,78}, 0, 100, 200 };
 
-static int fx_voxel_update()
+int fx_voxel_update()
 {
 	s_camera.angle = G.crank_angle_rad;
 
@@ -118,8 +118,7 @@ static int fx_voxel_update()
 	return 0;
 }
 
-Effect fx_voxel_init()
+void fx_voxel_init()
 {
 	init_heightmap();
-	return (Effect) {fx_voxel_update};
 }

@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -11,7 +11,7 @@ static int s_bar_count = 120;
 #define BAR_WIDTH (17)
 static uint8_t kBarColors[BAR_WIDTH] = {5, 50, 96, 134, 165, 189, 206, 216, 220, 216, 206, 189, 165, 134, 96, 50, 5};
 
-static int fx_kefren_update()
+int fx_kefren_update()
 {
 	if (G.buttons_cur & kButtonLeft)
 	{
@@ -53,9 +53,4 @@ static int fx_kefren_update()
 		draw_dithered_scanline(bar_line, py, dither_bias, G.framebuffer);
 	}
 	return s_bar_count;
-}
-
-Effect fx_kefren_init()
-{
-	return (Effect) {fx_kefren_update};
 }

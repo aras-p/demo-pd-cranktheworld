@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -49,7 +49,7 @@ static int s_frame_count = 0;
 static int s_temporal_mode = 2;
 #define TEMPORAL_MODE_COUNT 8
 
-static int fx_temporal_test_update()
+int fx_temporal_test_update()
 {
 	if (G.buttons_pressed & kButtonLeft)
 	{
@@ -331,9 +331,4 @@ static int fx_temporal_test_update()
 	++s_frame_count;
 
 	return s_temporal_mode;
-}
-
-Effect fx_temporal_test_init()
-{
-	return (Effect) { fx_temporal_test_update };
 }

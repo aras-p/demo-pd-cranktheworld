@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -21,10 +21,10 @@ static void star_init(Star* s, uint32_t* rng)
 	s->pos.x = RandomFloat01(rng) * 30000.0f - 15000.0f;
 	s->pos.y = RandomFloat01(rng) * 30000.0f - 15000.0f;
 	s->pos.z = RandomFloat01(rng) * 100 + 1;
-	s->speed = RandomFloat01(rng) * 35 + 10;
+	s->speed = RandomFloat01(rng) * 70 + 30;
 }
 
-static int fx_stars_update()
+int fx_starfield_update()
 {
 	const int kStep = 251;
 	if (G.buttons_cur & kButtonLeft)
@@ -41,11 +41,15 @@ static int fx_stars_update()
 	}
 
 	float dt = G.time - s_prev_time;
-	if (s_prev_time < 0)
+	if (s_prev_time < 0 || s_prev_time >= G.time)
 		dt = 0;
 	s_prev_time = G.time;
 
-	for (int i = 0; i < s_star_count; ++i)
+	float fx_alpha = G.time / 32.0f * 0.7f + 0.3f;
+	dt *= fx_alpha;
+	int draw_star_count = (int)(s_star_count * fx_alpha);
+
+	for (int i = 0; i < draw_star_count; ++i)
 	{
 		Star* s = &s_stars[i];
 		if (s->speed == 0) {
@@ -66,21 +70,14 @@ static int fx_stars_update()
 
 		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
 		put_pixel_black(row, px);
-		if (G.beat) {
-			if (px > 1)
-				put_pixel_black(row, px - 1);
-			if (px < LCD_COLUMNS-1)
-				put_pixel_black(row, px + 1);
-		}
 	}
 
-	return s_star_count;
+	return draw_star_count;
 }
 
-Effect fx_starfield_init()
+void fx_starfield_init()
 {
 	for (int i = 0; i < s_star_count; ++i) {
 		star_init(&s_stars[i], &s_rng);
 	}
-	return (Effect) {fx_stars_update};
 }

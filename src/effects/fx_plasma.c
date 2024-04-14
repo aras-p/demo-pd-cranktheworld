@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -26,7 +26,7 @@ static uint16_t s_plasma_pos2;
 static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
 
-static int fx_plasma_update()
+int fx_plasma_update()
 {
 	s_rng = 1;
 	int tpos4 = s_plasma_pos4;
@@ -77,9 +77,7 @@ static int fx_plasma_update()
 	return 0;
 }
 
-Effect fx_plasma_init()
+void fx_plasma_init()
 {
 	init_sin_table();
-
-	return (Effect) {fx_plasma_update};
 }

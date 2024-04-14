@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include <stdlib.h>
 
@@ -113,7 +113,7 @@ static int CompareZ(const void* a, const void* b)
 }
 
 
-static int fx_planes_update()
+int fx_planes_update()
 {
 	if (G.buttons_cur & kButtonLeft)
 	{
@@ -173,10 +173,9 @@ static int fx_planes_update()
 	return planeCount;
 }
 
-Effect fx_planes_init()
+void fx_planes_init()
 {
 	Scene3D_init(&s_scene);
 	Shape3D_init(&s_shape_plane, sizeof(g_mesh_Cube_vb) / sizeof(g_mesh_Cube_vb[0]), g_mesh_Cube_vb, sizeof(g_mesh_Cube_ib) / sizeof(g_mesh_Cube_ib[0]) / 3, g_mesh_Cube_ib);
 	Scene3D_setGlobalLight(&s_scene, (float3) { 0.3f, 1.0f, 0.3f });
-	return (Effect) {fx_planes_update};
 }

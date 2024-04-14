@@ -1,4 +1,4 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
@@ -167,7 +167,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	++s_frame_count;
 }
 
-static int fx_sponge_update()
+int fx_sponge_update()
 {
 	if (G.buttons_pressed & kButtonLeft)
 	{
@@ -184,9 +184,4 @@ static int fx_sponge_update()
 
 	do_render(G.crank_angle_rad, G.time, G.framebuffer, G.framebuffer_stride);
 	return s_temporal_mode;
-}
-
-Effect fx_sponge_init()
-{
-	return (Effect) { fx_sponge_update };
 }

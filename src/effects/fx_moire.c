@@ -1,10 +1,10 @@
-#include "fx.h"
+#include "../globals.h"
 
 #include "pd_api.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
-static int fx_moire_update()
+int fx_moire_update()
 {
 	float t = G.time;
 	float cx1 = sinf(t / 2) * LCD_COLUMNS / 3 + LCD_COLUMNS / 2;
@@ -33,9 +33,4 @@ static int fx_moire_update()
 	}
 
 	return 0;
-}
-
-Effect fx_moire_init()
-{
-	return (Effect) {fx_moire_update};
 }
