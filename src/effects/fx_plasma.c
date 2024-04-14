@@ -33,6 +33,7 @@ int fx_plasma_update()
 	int tpos3 = s_plasma_pos3;
 
 	int pix_idx = 0;
+	uint8_t* pix = g_screen_buffer;
 	for (int py = 0; py < LCD_ROWS; ++py)
 	{
 		int tpos1 = s_plasma_pos1 + 5;
@@ -41,8 +42,6 @@ int fx_plasma_update()
 		tpos3 &= TRIG_TABLE_MASK;
 		tpos4 &= TRIG_TABLE_MASK;
 
-		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
-
 		for (int px = 0; px < LCD_COLUMNS; ++px, ++pix_idx)
 		{
 			tpos1 &= TRIG_TABLE_MASK;
@@ -50,15 +49,8 @@ int fx_plasma_update()
 
 			int plasma = s_sin_table[tpos1] + s_sin_table[tpos2] + s_sin_table[tpos3] + s_sin_table[tpos4];
 
-			int index = plasma >> 3;
-			index &= 0xFF;
-			//if (index < 0) index = 0;
-			//if (index > 255) index = 255;
-
-			int test = g_blue_noise[pix_idx];
-			if (index < test) {
-				put_pixel_black(row, px);
-			}
+			int val = plasma >> 3;
+			*pix++ = val;
 
 			tpos1 += 5;
 			tpos2 += 3;
@@ -73,6 +65,8 @@ int fx_plasma_update()
 
 	//s_plasma_pos2 += 17;
 	//s_plasma_pos4 += 17;
+
+	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
 
 	return 0;
 }

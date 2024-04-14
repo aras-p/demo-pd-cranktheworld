@@ -123,6 +123,8 @@ static int update_effect()
 	}
 	else if (t < 64)
 		dbg_val = fx_prettyhip_update();
+	else if (t < 96)
+		dbg_val = fx_plasma_update();
 	else
 		dbg_val = fx_sponge_update();
 	return dbg_val;
