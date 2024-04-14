@@ -117,7 +117,10 @@ static int update_effect()
 	int dbg_val = 0;
 	float t = G.time;
 	if (t < 32)
-		dbg_val = fx_starfield_update();
+	{
+		float a = t / 32.0f;
+		dbg_val = fx_starfield_update(a);
+	}
 	else if (t < 64)
 		dbg_val = fx_prettyhip_update();
 	else

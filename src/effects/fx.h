@@ -16,7 +16,7 @@ int fx_prettyhip_update();
 int fx_puls_update();
 int fx_raytrace_update();
 int fx_sponge_update();
-int fx_starfield_update();
+int fx_starfield_update(float alpha);
 int fx_voxel_update();
 
 int fx_temporal_test_update();

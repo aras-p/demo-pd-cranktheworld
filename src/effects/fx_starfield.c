@@ -1,6 +1,7 @@
 #include "../globals.h"
 
 #include "pd_api.h"
+#include "../external/aheasing/easing.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
@@ -9,10 +10,11 @@ typedef struct Star {
 	float speed;
 } Star;
 
-#define MAX_STARS (20000) // 20k is still 30fps
+#define STARS_START (100)
+#define STARS_MID (3000)
+#define STARS_END (20000) // 20k is still 30fps
 
-static Star s_stars[MAX_STARS];
-static int s_star_count = 3000;
+static Star s_stars[STARS_END];
 static uint32_t s_rng = 1;
 static float s_prev_time = -1;
 
@@ -24,32 +26,23 @@ static void star_init(Star* s, uint32_t* rng)
 	s->speed = RandomFloat01(rng) * 70 + 30;
 }
 
-int fx_starfield_update()
+int fx_starfield_update(float alpha)
 {
-	const int kStep = 251;
-	if (G.buttons_cur & kButtonLeft)
-	{
-		s_star_count -= kStep;
-		if (s_star_count < 50)
-			s_star_count = 50;
-	}
-	if (G.buttons_cur & kButtonRight)
-	{
-		s_star_count += kStep;
-		if (s_star_count > MAX_STARS)
-			s_star_count = MAX_STARS;
-	}
-
 	float dt = G.time - s_prev_time;
 	if (s_prev_time < 0 || s_prev_time >= G.time)
 		dt = 0;
 	s_prev_time = G.time;
 
-	float fx_alpha = G.time / 32.0f * 0.7f + 0.3f;
-	dt *= fx_alpha;
-	int draw_star_count = (int)(s_star_count * fx_alpha);
+	float speed_a = CubicEaseIn(alpha) * 0.8f + 0.2f;
+	dt *= speed_a;
 
-	for (int i = 0; i < draw_star_count; ++i)
+	int draw_count;
+	if (alpha < 0.5f)
+		draw_count = (int)lerp(STARS_START, STARS_MID, alpha * 2.0f);
+	else
+		draw_count = (int)lerp(STARS_MID, STARS_END, (alpha-0.5f) * 2.0f);
+
+	for (int i = 0; i < draw_count; ++i)
 	{
 		Star* s = &s_stars[i];
 		if (s->speed == 0) {
@@ -72,12 +65,12 @@ int fx_starfield_update()
 		put_pixel_black(row, px);
 	}
 
-	return draw_star_count;
+	return draw_count;
 }
 
 void fx_starfield_init()
 {
-	for (int i = 0; i < s_star_count; ++i) {
+	for (int i = 0; i < STARS_END; ++i) {
 		star_init(&s_stars[i], &s_rng);
 	}
 }

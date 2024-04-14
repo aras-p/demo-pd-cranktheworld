@@ -42,6 +42,11 @@ static inline float fract(float v)
 	return v - floorf(v);
 }
 
+static inline float lerp(float a, float b, float t)
+{
+	return a * (1.0f - t) + b * t;
+}
+
 static inline float smoothstep(float a, float b, float v)
 {
 	float t = (v - a) / (b - a);
