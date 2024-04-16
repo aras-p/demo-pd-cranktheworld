@@ -119,6 +119,7 @@ static int update_effect()
 
 	int dbg_val = 0;
 	float t = G.time;
+	//t = 100;
 	if (t < 32)
 	{
 		float a = t / 32.0f;
