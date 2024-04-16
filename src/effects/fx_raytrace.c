@@ -257,7 +257,6 @@ static int CompareSphereDist(const void* a, const void* b)
 	return 0;
 }
 
-static int s_frame_count = 0;
 static int s_temporal_mode = 2;
 #define TEMPORAL_MODE_COUNT 4
 
@@ -322,7 +321,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		float dv = 1.0f / LCD_ROWS;
 		float du = 1.0f / LCD_COLUMNS;
 		float vv = 1.0f - dv * 0.5f;
-		int t_frame_index = s_frame_count & 3;
+		int t_frame_index = G.frame_count & 3;
 		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
 		{
 			int t_row_index = py & 1;
@@ -355,7 +354,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		float dv = 1.0f / LCD_ROWS;
 		float du = 1.0f / LCD_COLUMNS;
 		float vv = 1.0f - dv * 0.5f;
-		int t_frame_index = s_frame_count % 6;
+		int t_frame_index = G.frame_count % 6;
 		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
 		{
 			int t_row_index = py & 1;
@@ -388,7 +387,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		float dv = 1.0f / LCD_ROWS;
 		float du = 1.0f / LCD_COLUMNS;
 		float vv = 1.0f - dv * 0.5f;
-		int t_frame_index = s_frame_count & 7;
+		int t_frame_index = G.frame_count & 7;
 		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
 		{
 			int t_row_index = py & 1;
@@ -415,8 +414,6 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		}
 		draw_dithered_screen(framebuffer, 0);
 	}
-
-	++s_frame_count;
 }
 
 

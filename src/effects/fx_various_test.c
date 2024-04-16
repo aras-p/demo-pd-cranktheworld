@@ -79,8 +79,6 @@ static int trace_ray(TraceState* st, float x, float y)
 
 
 
-static int s_frame_count = 0;
-
 int fx_various_test_update()
 {
 	TraceState st;
@@ -107,7 +105,7 @@ int fx_various_test_update()
 	float dy = ysize / LCD_ROWS;
 
 	float y = ysize / 2 - dy * 0.5f;
-	int t_frame_index = s_frame_count % 8;
+	int t_frame_index = G.frame_count % 8;
 	for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 	{
 		int t_row_index = py & 1;
@@ -127,6 +125,5 @@ int fx_various_test_update()
 		}
 	}
 	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
-	++s_frame_count;
 	return 0;
 }

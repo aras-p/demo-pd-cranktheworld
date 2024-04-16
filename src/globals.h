@@ -15,6 +15,7 @@ typedef struct Globals
 
 	// time: all units in music beats (1.0 = 1 beat = 0.46875s; 4.0 = 1 bar = 1.875s)
 	float time; // current global time
+	int frame_count;
 	bool beat; // is current frame on the "beat"
 
 	// screen

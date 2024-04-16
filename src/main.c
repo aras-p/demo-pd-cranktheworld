@@ -66,6 +66,7 @@ static int s_beat_frame_done = -1;
 
 static int track_current_time()
 {
+	G.frame_count++;
 	G.time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
 	if (s_music_ok)
@@ -122,7 +123,10 @@ static int update_effect()
 		dbg_val = fx_starfield_update(a);
 	}
 	else if (t < 64)
-		dbg_val = fx_prettyhip_update();
+	{
+		float a = (t - 32.0f) / 32.0f;
+		dbg_val = fx_prettyhip_update(a);
+	}
 	else if (t < 96)
 		dbg_val = fx_plasma_update();
 	else

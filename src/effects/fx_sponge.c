@@ -63,7 +63,6 @@ static int trace_ray(const TraceState* st, float x, float y)
 	return 255 - i * 31;
 }
 
-static int s_frame_count = 0;
 static int s_temporal_mode = 0;
 #define TEMPORAL_MODE_COUNT 3
 
@@ -91,14 +90,14 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		{
 			// Temporal: every frame update just one out of every 2x2 pixel blocks.
 			// Which means every other frame we skip every other row.
-			if ((s_frame_count & 1) == (py & 1))
+			if ((G.frame_count & 1) == (py & 1))
 				continue;
 
 			float x = -xsize / 2 + dx;
 			int pix_idx = py * LCD_COLUMNS / 2;
 			// And for each row we step at 2 pixels, but shift location by one every
 			// other frame.
-			if ((s_frame_count & 2)) {
+			if ((G.frame_count & 2)) {
 				x += dx;
 				pix_idx++;
 			}
@@ -116,7 +115,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	{
 		// 4x2 block temporal update one pixel per frame
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count & 7;
+		int t_frame_index = G.frame_count & 7;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py & 1;
@@ -141,7 +140,7 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	{
 		// 4x3 block temporal update one pixel per frame
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count % 12;
+		int t_frame_index = G.frame_count % 12;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py % 3;
@@ -162,9 +161,6 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		}
 		draw_dithered_screen(framebuffer, 0);
 	}
-
-
-	++s_frame_count;
 }
 
 int fx_sponge_update()

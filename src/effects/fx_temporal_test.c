@@ -45,7 +45,6 @@ static int s_pattern_4x4_8[8][4] = {
 	{0, 1, 3, 0},
 };
 
-static int s_frame_count = 0;
 static int s_temporal_mode = 2;
 #define TEMPORAL_MODE_COUNT 8
 
@@ -116,14 +115,14 @@ int fx_temporal_test_update()
 		{
 			// Temporal: every frame update just one out of every 2x2 pixel blocks.
 			// Which means every other frame we skip every other row.
-			if ((s_frame_count & 1) == (py & 1))
+			if ((G.frame_count & 1) == (py & 1))
 				continue;
 
 			float x = -xsize / 2 + dx;
 			int pix_idx = py * LCD_COLUMNS / 2;
 			// And for each row we step at 2 pixels, but shift location by one every
 			// other frame.
-			if ((s_frame_count & 2)) {
+			if ((G.frame_count & 2)) {
 				x += dx;
 				pix_idx++;
 			}
@@ -141,7 +140,7 @@ int fx_temporal_test_update()
 	{
 		// Temporal: for each 4x4 block, trace only two pixels each frame (8x fewer rays): 18fps (55ms)
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count & 7;
+		int t_frame_index = G.frame_count & 7;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py & 3;
@@ -178,7 +177,7 @@ int fx_temporal_test_update()
 			{0, 2},
 		};
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count & 7;
+		int t_frame_index = G.frame_count & 7;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py & 1;
@@ -217,7 +216,7 @@ int fx_temporal_test_update()
 			{0, 2, 0},
 		};
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count % 9;
+		int t_frame_index = G.frame_count % 9;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py % 3;
@@ -258,7 +257,7 @@ int fx_temporal_test_update()
 			{0, 4, 0},
 		};
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count % 12;
+		int t_frame_index = G.frame_count % 12;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py % 3;
@@ -305,7 +304,7 @@ int fx_temporal_test_update()
 			{4, 0, 0, 0},
 		};
 		float y = ysize / 2 - dy * 0.5f;
-		int t_frame_index = s_frame_count & 15;
+		int t_frame_index = G.frame_count & 15;
 		for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 		{
 			int t_row_index = py & 3;
@@ -326,9 +325,6 @@ int fx_temporal_test_update()
 		}
 		draw_dithered_screen(G.framebuffer, 0);
 	}
-
-
-	++s_frame_count;
 
 	return s_temporal_mode;
 }

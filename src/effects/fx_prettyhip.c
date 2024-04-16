@@ -9,6 +9,7 @@
 typedef struct TraceState
 {
 	float t;
+	float alpha;
 	float rotmx, rotmy;
 	float camx, camy;
 	float camdist;
@@ -32,16 +33,15 @@ static int trace_ray(TraceState* st, float x, float y)
 	float b = 0.95f * (e < 0.0f ? v : 1.0f - v) - e * e;
 	float a = smoothstep(-0.05f, 0.0f, b) + s * 0.1f;
 
-	return MIN(255, (int)(a * 250.0f));
+	float res = st->alpha < 0.5f ? e : a;
+	return MIN(255, (int)(res * 250.0f));
 }
 
-static int s_frame_count = 0;
-
-int fx_prettyhip_update()
+int fx_prettyhip_update(float alpha)
 {
 	TraceState st;
-	st.t = G.time;
 	st.t = G.time * 0.3f;
+	st.alpha = alpha;
 	float r_angle = M_PIf / 4.0f + st.t * 0.1f + G.crank_angle_rad;
 	st.rotmx = sinf(r_angle);
 	st.rotmy = cosf(r_angle);
@@ -52,7 +52,7 @@ int fx_prettyhip_update()
 	float dy = ysize / LCD_ROWS;
 
 	float y = ysize / 2 - dy * 0.5f;
-	int t_frame_index = s_frame_count % 8;
+	int t_frame_index = G.frame_count % 8;
 	for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 	{
 		int t_row_index = py & 1;
@@ -72,6 +72,5 @@ int fx_prettyhip_update()
 		}
 	}
 	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
-	++s_frame_count;
 	return 0;
 }
