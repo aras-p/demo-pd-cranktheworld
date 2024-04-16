@@ -134,6 +134,11 @@ static int update_effect()
 		float a = (t - 64.0f) / 32.0f;
 		dbg_val = fx_plasma_update(a);
 	}
+	//else if (t < 96)
+	//{
+	//	float a = (t - 80.0f) / 16.0f;
+	//	dbg_val = fx_blobs_update(a);
+	//}
 	else
 		dbg_val = fx_sponge_update();
 	return dbg_val;

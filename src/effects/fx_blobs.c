@@ -21,7 +21,7 @@ static void blob_init(Blob* b)
 	b->speed = (RandomFloat01(&G.rng) * 2.0f - 1.0f);
 }
 
-int fx_blobs_update()
+int fx_blobs_update(float alpha)
 {
 	if (G.buttons_pressed & kButtonLeft)
 	{
@@ -37,7 +37,7 @@ int fx_blobs_update()
 	}
 
 	// update blobs
-	float time = G.time;
+	float time = G.time * 0.45f;
 	float offset = 0.0f;
 	for (int i = 0; i < s_blob_count; ++i) {
 		Blob* b = &s_blobs[i];
@@ -51,13 +51,19 @@ int fx_blobs_update()
 	}
 
 	float scale = 1.0f / (1.0f * powf(10.0f, (float)(3 + s_blob_count * 3)));
-	for (int py = 0; py < LCD_ROWS; py += 2)
+	
+	int t_frame_index = G.frame_count & 3;
+	uint8_t* pix = g_screen_buffer;
+	for (int py = 0; py < LCD_ROWS; ++py)
 	{
-		uint8_t* row1 = G.framebuffer + py * G.framebuffer_stride;
-		uint8_t* row2 = row1 + G.framebuffer_stride;
-		int pix_idx = py * LCD_COLUMNS;
+		int t_row_index = py & 1;
+		int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
+		if (col_offset < 0)
+			continue; // this row does not evaluate any pixels
 
-		for (int px = 0; px < LCD_COLUMNS; px += 2, pix_idx += 2)
+		int pix_idx = py * LCD_COLUMNS;
+		pix_idx += col_offset;
+		for (int px = col_offset; px < LCD_COLUMNS; px += 2, pix_idx += 2)
 		{
 			float dist = 1.0f;
 			for (int i = 0; i < s_blob_count; ++i) {
@@ -67,26 +73,11 @@ int fx_blobs_update()
 				dist *= (dx * dx + dy * dy);
 			}
 			int val = (int)(280 - dist * scale);
-
-			// output 2x2 block of pixels
-			int test = g_blue_noise[pix_idx];
-			if (val < test) {
-				put_pixel_black(row1, px);
-			}
-			test = g_blue_noise[pix_idx + 1];
-			if (val < test) {
-				put_pixel_black(row1, px + 1);
-			}
-			test = g_blue_noise[pix_idx + LCD_COLUMNS];
-			if (val < test) {
-				put_pixel_black(row2, px);
-			}
-			test = g_blue_noise[pix_idx + LCD_COLUMNS + 1];
-			if (val < test) {
-				put_pixel_black(row2, px + 1);
-			}
+			val = MAX(-250, val);
+			g_screen_buffer[pix_idx] = val;
 		}
 	}
+	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
 
 	return s_blob_count;
 }

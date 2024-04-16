@@ -52,7 +52,7 @@ int fx_prettyhip_update(float alpha)
 	float dy = ysize / LCD_ROWS;
 
 	float y = ysize / 2 - dy * 0.5f;
-	int t_frame_index = G.frame_count % 8;
+	int t_frame_index = G.frame_count & 7;
 	for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 	{
 		int t_row_index = py & 1;
