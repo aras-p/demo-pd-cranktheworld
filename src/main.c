@@ -29,7 +29,9 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 	if (event == kEventInit)
 	{
 		const char* err;
+		G.rng = 1;
 		G.pd = pd;
+		G.frame_count = 0;
 		G.time = -1.0f;
 		font = pd->graphics->loadFont(fontpath, &err);	
 		if (font == NULL)
@@ -128,7 +130,10 @@ static int update_effect()
 		dbg_val = fx_prettyhip_update(a);
 	}
 	else if (t < 96)
-		dbg_val = fx_plasma_update();
+	{
+		float a = (t - 64.0f) / 32.0f;
+		dbg_val = fx_plasma_update(a);
+	}
 	else
 		dbg_val = fx_sponge_update();
 	return dbg_val;

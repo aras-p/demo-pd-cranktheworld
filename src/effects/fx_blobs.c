@@ -14,13 +14,11 @@ typedef struct Blob {
 static Blob s_blobs[MAX_BLOBS];
 static int s_blob_count = 5;
 
-static uint32_t s_rng = 1;
-
 static void blob_init(Blob* b)
 {
-	b->sx = RandomFloat01(&s_rng) * 0.5f + 0.1f;
-	b->sy = RandomFloat01(&s_rng) * 0.5f + 0.1f;
-	b->speed = (RandomFloat01(&s_rng) * 2.0f - 1.0f);
+	b->sx = RandomFloat01(&G.rng) * 0.5f + 0.1f;
+	b->sy = RandomFloat01(&G.rng) * 0.5f + 0.1f;
+	b->speed = (RandomFloat01(&G.rng) * 2.0f - 1.0f);
 }
 
 int fx_blobs_update()

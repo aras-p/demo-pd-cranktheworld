@@ -19,16 +19,14 @@ static void init_sin_table()
 	}
 }
 
-static uint32_t s_rng = 1;
-
 static uint16_t s_plasma_pos1;
 static uint16_t s_plasma_pos2;
 static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
+static int s_plasma_bias = 0;
 
-int fx_plasma_update()
+int fx_plasma_update(float alpha)
 {
-	s_rng = 1;
 	int tpos4 = s_plasma_pos4;
 	int tpos3 = s_plasma_pos3;
 
@@ -63,10 +61,13 @@ int fx_plasma_update()
 	s_plasma_pos1 += 7;
 	s_plasma_pos3 += 3;
 
-	//s_plasma_pos2 += 17;
-	//s_plasma_pos4 += 17;
+	if (G.beat)
+	{
+		int r = XorShift32(&G.rng);
+		s_plasma_bias = (r & 255) - 128;
+	}
 
-	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
+	draw_dithered_screen(G.framebuffer, s_plasma_bias);
 
 	return 0;
 }

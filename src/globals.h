@@ -22,6 +22,9 @@ typedef struct Globals
 	uint8_t* framebuffer;
 	int framebuffer_stride;
 
+	// misc
+	uint32_t rng;
+
 	// input
 	uint32_t buttons_cur; // buttons currently pressed, bitmask of kButton*
 	uint32_t buttons_pressed; // buttons that were pressed down this frame, bitmask of kButton*
