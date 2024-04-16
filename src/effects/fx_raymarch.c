@@ -4,6 +4,7 @@
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 #include "../external/aheasing/easing.h"
+#include "../mini3d/render.h"
 
 typedef struct TraceState
 {
@@ -364,5 +365,27 @@ int fx_raymarch_update(float alpha)
 	}
 	memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS / 2 * LCD_ROWS / 2);
 	draw_dithered_screen_2x2(G.framebuffer, 1);
+
+	// draw divider lines
+	float3 linea, lineb;
+	linea.z = lineb.z = 0;
+	uint8_t pattern[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	if (section_idx == 5)
+	{
+		linea.x = 0; lineb.x = LCD_COLUMNS - 1;
+		linea.y = lineb.y = transition_y * 2;
+		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
+	}
+	if (section_idx == 6)
+	{
+		linea.x = 0; lineb.x = LCD_COLUMNS - 1;
+		linea.y = lineb.y = LCD_ROWS/2;
+		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
+
+		linea.x = lineb.x = transition_x * 2;
+		linea.y = 0; lineb.y = LCD_ROWS-1;
+		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
+	}
+
 	return 0;
 }
