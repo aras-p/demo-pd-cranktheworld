@@ -152,7 +152,10 @@ static int update_effect()
 		dbg_val = fx_raymarch_update(a, prev_a);
 	}
 	else
-		dbg_val = fx_sponge_update();
+	{
+		float a = invlerp(240.0f, 304.0f, t);
+		dbg_val = fx_blobs_update(a);
+	}
 	return dbg_val;
 }
 

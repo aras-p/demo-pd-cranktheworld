@@ -45,10 +45,8 @@ set (DEMO_SOURCES
 	src/effects/fx_planes.c
 	src/effects/fx_plasma.c
 	src/effects/fx_prettyhip.c
-	src/effects/fx_puls.c
 	src/effects/fx_raymarch.c
 	src/effects/fx_raytrace.c
-	src/effects/fx_sponge.c
 	src/effects/fx_starfield.c
 	src/effects/fx_temporal_test.c
 	src/effects/fx_voxel.c
