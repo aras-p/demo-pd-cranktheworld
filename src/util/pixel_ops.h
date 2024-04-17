@@ -14,8 +14,8 @@ static inline void put_pixel_black(uint8_t* row, int x)
 	row[x >> 3] &= mask;
 }
 
+// negative bias lightens the image, positive darkens
 void draw_dithered_scanline(const uint8_t* values, int y, int bias, uint8_t* framebuffer);
-
 void draw_dithered_screen(uint8_t* framebuffer, int bias);
 void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter);
 

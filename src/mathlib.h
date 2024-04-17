@@ -36,6 +36,14 @@ static inline uint32_t swap(uint32_t n)
 
 #define M_PIf (3.14159265f)
 
+static inline float saturate(float v)
+{
+	if (v < 0.0f)
+		v = 0.0f;
+	if (v > 1.0f)
+		v = 1.0f;
+	return v;
+}
 
 static inline float fract(float v)
 {

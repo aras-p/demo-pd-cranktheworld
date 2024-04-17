@@ -153,9 +153,9 @@ static int update_effect()
 	}
 	else
 	{
+		float rt = t - 240.0f;
 		float a = invlerp(240.0f, 304.0f, t);
-		//dbg_val = fx_blobs_update(a);
-		dbg_val = fx_raytrace_update(a);
+		dbg_val = fx_raytrace_update(rt, a);
 	}
 	return dbg_val;
 }

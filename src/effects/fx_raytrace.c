@@ -113,12 +113,24 @@ typedef struct SphereOrder {
 static SphereOrder s_SphereOrder[kSphereCount];
 static char s_SphereVisible[kSphereCount];
 
-// start time, bounce time, bounce height
+// start time, duration, start height
 static float3 kSphereBounces[kSphereCount] = {
-	{6.0f, 3.0f, 3.0f},
-	{3.0f, 3.0f, 3.0f},
-	{9.0f, 3.0f, 3.0f},
+	{6.0f, 6.0f, 8.0f},
+	{22.0f, 6.0f, 8.0f},
+	{14.0f, 6.0f, 8.0f},
 };
+// start time, duration, end distance
+static float3 kSphereRoll[kSphereCount] = {
+	{48.0f, 16.0f, 8.0f},
+	{48.0f, 16.0f, 0.0f},
+	{48.0f, 16.0f, 8.0f},
+};
+
+static float ease_roll(float x)
+{
+	x = saturate(x);
+	return 2.7f * x * x * x - 0.3f * x * x - 0.5f * x;
+}
 
 static float3 s_LightDir;
 
@@ -262,15 +274,11 @@ static int CompareSphereDist(const void* a, const void* b)
 	return 0;
 }
 
-static int s_temporal_mode = 1;
-#define TEMPORAL_MODE_COUNT 2
-
-
 static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
 {
 	//time = 24; // debug
 
-	float cangle = crank_angle + (68 + time * 7) * (M_PIf / 180.0f);
+	float cangle = crank_angle + (68 + time * 6) * (M_PIf / 180.0f);
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
 	float dist = 4.0f;
@@ -283,7 +291,11 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 		// animate spheres
 		float3 sp = s_SpheresOrig[i];
 		s_SphereVisible[i] = time > kSphereBounces[i].x;
-		sp.y = 1.0f + kSphereBounces[i].z - BounceEaseOut((time - kSphereBounces[i].x) / kSphereBounces[i].y) * kSphereBounces[i].z;
+		float a_bounce = 1.0f - BounceEaseOut((time - kSphereBounces[i].x) / kSphereBounces[i].y);
+		float a_roll = ease_roll((time - kSphereRoll[i].x) / kSphereRoll[i].y);
+		sp.x = sp.x + a_roll * kSphereRoll[i].z * (signbit(sp.x) ? -1.0f : 1.0f);
+		sp.y = 1.0f + a_bounce * kSphereBounces[i].z;
+
 		s_SpheresPos[i] = sp;
 
 		s_SphereOrder[i].index = i;
@@ -294,93 +306,44 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 
 	Ray camRay;
 	camRay.orig = s_camera.origin;
-	if (s_temporal_mode == 0)
+	// 3x2 block temporal update one pixel per frame
+	float dv = 1.0f / LCD_ROWS;
+	float du = 1.0f / LCD_COLUMNS;
+	float vv = 1.0f - dv * 0.5f;
+	int t_frame_index = G.frame_count % 6;
+	for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
 	{
-		// 2x2 block temporal update one pixel per frame
-		float dv = 1.0f / LCD_ROWS;
-		float du = 1.0f / LCD_COLUMNS;
-		float vv = 1.0f - dv * 0.5f;
-		int t_frame_index = G.frame_count & 3;
-		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
+		int t_row_index = py & 1;
+		int col_offset = g_order_pattern_3x2[t_frame_index][t_row_index] - 1;
+		if (col_offset < 0)
+			continue; // this row does not evaluate any pixels
+
+		float uu = du * 0.5f;
+		float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
+		rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
+
+		int pix_idx = py * LCD_COLUMNS;
+
+		uu += du * col_offset;
+		pix_idx += col_offset;
+		for (int px = col_offset; px < LCD_COLUMNS; px += 3, uu += du * 3, pix_idx += 3)
 		{
-			int t_row_index = py & 1;
-			int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
-			if (col_offset < 0)
-				continue; // this row does not evaluate any pixels
+			float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
+			camRay.dir = v3_normalize(rdir);
 
-			float uu = du * 0.5f;
-			float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
-			rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
-
-			int pix_idx = py * LCD_COLUMNS;
-
-			uu += du * col_offset;
-			pix_idx += col_offset;
-			for (int px = col_offset; px < LCD_COLUMNS; px += 2, uu += du * 2, pix_idx += 2)
-			{
-				float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
-				camRay.dir = v3_normalize(rdir);
-
-				int val = trace_ray(&camRay);
-				g_screen_buffer[pix_idx] = val;
-			}
+			int val = trace_ray(&camRay);
+			g_screen_buffer[pix_idx] = val;
 		}
-		draw_dithered_screen(framebuffer, 0);
 	}
-	if (s_temporal_mode == 1)
-	{
-		// 3x2 block temporal update one pixel per frame
-		float dv = 1.0f / LCD_ROWS;
-		float du = 1.0f / LCD_COLUMNS;
-		float vv = 1.0f - dv * 0.5f;
-		int t_frame_index = G.frame_count % 6;
-		for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
-		{
-			int t_row_index = py & 1;
-			int col_offset = g_order_pattern_3x2[t_frame_index][t_row_index] - 1;
-			if (col_offset < 0)
-				continue; // this row does not evaluate any pixels
-
-			float uu = du * 0.5f;
-			float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
-			rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
-
-			int pix_idx = py * LCD_COLUMNS;
-
-			uu += du * col_offset;
-			pix_idx += col_offset;
-			for (int px = col_offset; px < LCD_COLUMNS; px += 3, uu += du * 3, pix_idx += 3)
-			{
-				float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
-				camRay.dir = v3_normalize(rdir);
-
-				int val = trace_ray(&camRay);
-				g_screen_buffer[pix_idx] = val;
-			}
-		}
-		draw_dithered_screen(framebuffer, 0);
-	}
+	int bias = (int)lerp(-250.0f, 0.0f, time);
+	bias = MIN(0, bias);
+	draw_dithered_screen(framebuffer, bias);
 }
 
-
-int fx_raytrace_update(float alpha)
+int fx_raytrace_update(float rel_time, float alpha)
 {
-	if (G.buttons_pressed & kButtonLeft)
-	{
-		s_temporal_mode--;
-		if (s_temporal_mode < 0)
-			s_temporal_mode = TEMPORAL_MODE_COUNT - 1;
-	}
-	if (G.buttons_pressed & kButtonRight)
-	{
-		s_temporal_mode++;
-		if (s_temporal_mode >= TEMPORAL_MODE_COUNT)
-			s_temporal_mode = 0;
-	}
-
-	do_render(G.crank_angle_rad, G.time, G.framebuffer, G.framebuffer_stride);
-
-	return s_temporal_mode;
+	do_render(G.crank_angle_rad, rel_time, G.framebuffer, G.framebuffer_stride);
+	return 0;
 }
 
 void fx_raytrace_init()
