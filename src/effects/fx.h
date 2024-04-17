@@ -12,13 +12,13 @@ int fx_prettyhip_update(float alpha);
 int fx_plasma_update(float alpha);
 
 int fx_raymarch_update(float alpha, float prev_alpha);
+int fx_raytrace_update(float alpha);
 
 int fx_blobs_update(float alpha);
 
 int fx_kefren_update();
 int fx_moire_update();
 int fx_planes_update();
-int fx_raytrace_update();
 int fx_voxel_update();
 
 int fx_temporal_test_update();
