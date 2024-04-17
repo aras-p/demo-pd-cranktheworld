@@ -53,7 +53,6 @@ int fx_blobs_update(float alpha)
 	float scale = 1.0f / (1.0f * powf(10.0f, (float)(3 + s_blob_count * 3)));
 	
 	int t_frame_index = G.frame_count & 3;
-	uint8_t* pix = g_screen_buffer;
 	for (int py = 0; py < LCD_ROWS; ++py)
 	{
 		int t_row_index = py & 1;

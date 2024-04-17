@@ -14,11 +14,13 @@ typedef struct TraceState
 	float xor_rotmx, xor_rotmy;
 	float xor_scale;
 	float xor_camx, xor_camy;
+	int xor_mask;
 
 	float sph_camx, sph_camy;
 	float sph_camdist;
 	float3 sponge_pos;
 	float puls_t_param;
+	float puls_width_param;
 	float puls_cosa, puls_sina;
 	float3 puls_pos;
 } TraceState;
@@ -39,6 +41,8 @@ static int trace_xor_towers(TraceState* st, float x, float y)
 
 	int bx = 0, by = 0, bz = 0;
 
+	int mask = st->xor_mask;
+
 #define MAXSTEP 35
 	float height = 0.0f;
 	int it = 0;
@@ -46,7 +50,7 @@ static int trace_xor_towers(TraceState* st, float x, float y)
 	for (; it < MAXSTEP; ++it)
 	{
 		int tst = bx ^ by ^ bz;
-		tst &= 63;
+		tst &= mask;
 		if (tst < bz - 8)
 			break;
 		bx = (int)(ux * height + cx);
@@ -57,7 +61,8 @@ static int trace_xor_towers(TraceState* st, float x, float y)
 	}
 	//return (int)(height * (255.0f / 70.0f));
 
-	int res = (it - 10) * 10;
+	int res = (it - 14) * 12;
+	//res += G.beat ? 50 : 0;
 	res = MAX(0, res);
 	res = MIN(255, res);
 	return res;
@@ -177,7 +182,7 @@ static int trace_sponge(TraceState* st, float x, float y)
 
 #define PULS_MAX_TRACE_STEPS 24
 
-static float puls_sdf(float timeParam, float3 pos)
+static float puls_sdf(float timeParam, float widthParam, float3 pos)
 {
 	float v2x = fabsf(fract(pos.x) - 0.5f) / 2.0f;
 	float v2y = fabsf(fract(pos.y) - 0.5f) / 2.0f;
@@ -189,11 +194,10 @@ static float puls_sdf(float timeParam, float3 pos)
 	v2x = 0.25f - v2x;
 	v2y = 0.25f - v2y;
 	v2z = 0.25f - v2z;
-	float width = (0.08f - r * 2.0f) * 0.3f;
 	float dx = fabsf(v2z - v2x);
 	float dy = fabsf(v2x - v2y);
 	float dz = fabsf(v2y - v2z);
-	float d2 = dx + dy + dz - width;
+	float d2 = dx + dy + dz - widthParam;
 
 	return MIN(d1, d2);
 }
@@ -211,14 +215,17 @@ static int trace_puls(TraceState* st, float x, float y)
 	for (i = 0; i < PULS_MAX_TRACE_STEPS; ++i)
 	{
 		float3 q = v3_add(pos, v3_mulfl(dir, t));
-		float d = puls_sdf(st->puls_t_param, q);
+		float d = puls_sdf(st->puls_t_param, st->puls_width_param, q);
 		if (d < t * 0.07f)
 			break;
 		t += d * 1.7f;
 	}
 
 	//return (int)(((float)j) / (float)MAXSTEP * 255.0f);
-	return MIN((int)(t * 0.25f * 255.0f), 255);
+	int res = (t - 0.4f) * (255.0f * 0.25f);
+	res = MIN(255, res);
+	res = MAX(0, res);
+	return res;
 }
 
 
@@ -239,6 +246,9 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 	st.xor_scale = 1.666f + sinf(G.time * 0.05f) * 0.3f;
 	st.xor_camx = G.time * 0.4f;
 	st.xor_camy = G.time * 1.7f;
+	int bar_idx = (((int)G.time) / 4) & 3;
+	int xor_masks[4] = {63, 61, 59, 63};
+	st.xor_mask = xor_masks[bar_idx];
 
 	st.sph_camx = cosf(st.t * 0.3f + 1.66f);
 	st.sph_camy = cosf(st.t * 0.23f + 1.0f);
@@ -247,8 +257,9 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 	st.sponge_pos = (float3){0.0f, 0.0f, G.time * 0.5f};
 
 	float pulst = G.time * 5.0f;
-	//st.t = pulst;
 	st.puls_t_param = 0.0769f * sinf(pulst * 2.0f * -0.0708f);
+	st.puls_width_param = (0.08f - st.puls_t_param * 2.0f) * (G.beat ? 0.3f : 0.1f);
+
 	st.puls_sina = sinf(pulst * 0.00564f);
 	st.puls_cosa = cosf(pulst * 0.00564f);
 	st.puls_pos.x = 0.5f + 0.0134f * pulst;
@@ -265,8 +276,9 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 		transition_in = CubicEaseInOut(section_alpha * 8.0f);
 	int transition_x = (int)(LCD_COLUMNS / 4 * transition_in);
 	int transition_y = (int)(LCD_ROWS / 4 * transition_in);
-	float divider_angle1 = section_alpha * M_PIf * 1.0f;
-	float divider_angle2 = divider_angle1 + M_PIf * 0.5f;
+	bool section8 = section_idx == 8;
+	float divider_angle1 = section_alpha * M_PIf + (section8 ? M_PIf : 0.0f);
+	float divider_angle2 = divider_angle1 + (M_PIf * 0.5f) * (section8 ? (1.0f+section_alpha) : 1.0f);
 	float divider_dx1 = cosf(divider_angle1);
 	float divider_dy1 = sinf(divider_angle1);
 	float divider_dx2 = cosf(divider_angle2);
@@ -368,7 +380,7 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 				g_screen_buffer_2x2sml[pix_idx] = val;
 			}
 		}
-		else if (section_idx == 7) // same as above, divider lines rotating
+		else if (section_idx >= 7) // same as above, divider lines rotating
 		{
 			float pdy = py - LCD_ROWS / 4;
 			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
@@ -414,7 +426,7 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 		linea.y = 0; lineb.y = LCD_ROWS-1;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
-	if (section_idx == 7)
+	if (section_idx >= 7)
 	{
 		linea.x = LCD_COLUMNS / 2 + divider_dx1 * LCD_COLUMNS;
 		linea.y = LCD_ROWS / 2 + divider_dy1 * LCD_COLUMNS;
