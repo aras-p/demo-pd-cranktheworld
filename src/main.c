@@ -32,7 +32,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		G.rng = 1;
 		G.pd = pd;
 		G.frame_count = 0;
-		G.time = -1.0f;
+		G.time = G.prev_time = G.prev_prev_time = -1.0f;
 		font = pd->graphics->loadFont(fontpath, &err);	
 		if (font == NULL)
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
@@ -69,6 +69,8 @@ static int s_beat_frame_done = -1;
 static int track_current_time()
 {
 	G.frame_count++;
+	G.prev_prev_time = G.prev_time;
+	G.prev_time = G.time;
 	G.time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
 	if (s_music_ok)
@@ -92,6 +94,10 @@ static int track_current_time()
 	}
 #endif
 
+	if (G.prev_time > G.time)
+		G.prev_time = G.time;
+	if (G.prev_prev_time > G.prev_time)
+		G.prev_prev_time = G.prev_time;
 
 	// "beat" is if during this frame the tick would change
 	int beat_at_end_of_frame = (int)(G.time + TIME_LEN_30FPSFRAME);
@@ -119,7 +125,6 @@ static int update_effect()
 
 	int dbg_val = 0;
 	float t = G.time;
-	//t = 100;
 	if (t < 32)
 	{
 		float a = t / 32.0f;
@@ -143,7 +148,8 @@ static int update_effect()
 	else if (t < 240)
 	{
 		float a = invlerp(96.0f, 240.0f, t);
-		dbg_val = fx_raymarch_update(a);
+		float prev_a = invlerp(96.0f, 240.0f, G.prev_prev_time);
+		dbg_val = fx_raymarch_update(a, prev_a);
 	}
 	else
 		dbg_val = fx_sponge_update();

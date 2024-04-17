@@ -15,7 +15,6 @@ typedef struct Star {
 #define STARS_END (20000) // 20k is still 30fps
 
 static Star s_stars[STARS_END];
-static float s_prev_time = -1;
 
 static void star_init(Star* s, uint32_t* rng)
 {
@@ -27,10 +26,7 @@ static void star_init(Star* s, uint32_t* rng)
 
 int fx_starfield_update(float alpha)
 {
-	float dt = G.time - s_prev_time;
-	if (s_prev_time < 0 || s_prev_time >= G.time)
-		dt = 0;
-	s_prev_time = G.time;
+	float dt = G.time - G.prev_time;
 
 	float speed_a = CubicEaseIn(alpha) * 0.8f + 0.2f;
 	dt *= speed_a;

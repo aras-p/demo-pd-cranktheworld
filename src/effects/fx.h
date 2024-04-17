@@ -11,7 +11,7 @@ int fx_starfield_update(float alpha);
 int fx_prettyhip_update(float alpha);
 int fx_plasma_update(float alpha);
 
-int fx_raymarch_update(float alpha);
+int fx_raymarch_update(float alpha, float prev_alpha);
 
 int fx_blobs_update(float alpha);
 

@@ -225,7 +225,7 @@ static int trace_puls(TraceState* st, float x, float y)
 // ------------------------------------------
 
 
-int fx_raymarch_update(float alpha)
+int fx_raymarch_update(float alpha, float prev_alpha)
 {
 	TraceState st;
 	st.t = G.time;
@@ -265,6 +265,12 @@ int fx_raymarch_update(float alpha)
 		transition_in = CubicEaseInOut(section_alpha * 8.0f);
 	int transition_x = (int)(LCD_COLUMNS / 4 * transition_in);
 	int transition_y = (int)(LCD_ROWS / 4 * transition_in);
+	float divider_angle1 = section_alpha * M_PIf * 1.0f;
+	float divider_angle2 = divider_angle1 + M_PIf * 0.5f;
+	float divider_dx1 = cosf(divider_angle1);
+	float divider_dy1 = sinf(divider_angle1);
+	float divider_dx2 = cosf(divider_angle2);
+	float divider_dy2 = sinf(divider_angle2);
 
 	float xsize = 1.0f;
 	float ysize = 0.6f;
@@ -362,6 +368,28 @@ int fx_raymarch_update(float alpha)
 				g_screen_buffer_2x2sml[pix_idx] = val;
 			}
 		}
+		else if (section_idx == 7) // same as above, divider lines rotating
+		{
+			float pdy = py - LCD_ROWS / 4;
+			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			{
+				float pdx = px - LCD_COLUMNS / 4;
+				float det1 = divider_dx1 * pdy - divider_dy1 * pdx;
+				float det2 = divider_dx2 * pdy - divider_dy2 * pdx;
+				int quad_index = (det1 >= 0.0f ? 0 : 1) + (det2 >= 0.0f ? 2 : 0);
+
+				int val;
+				if (quad_index == 0)
+					val = trace_puls(&st, x, y);
+				else if (quad_index == 1)
+					val = trace_sphere_field(&st, x, y);
+				else if (quad_index == 2)
+					val = trace_octa_field(&st, x, y);
+				else
+					val = trace_sponge(&st, x, y);
+				g_screen_buffer_2x2sml[pix_idx] = val;
+			}
+		}
 	}
 	memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS / 2 * LCD_ROWS / 2);
 	draw_dithered_screen_2x2(G.framebuffer, 1);
@@ -384,6 +412,20 @@ int fx_raymarch_update(float alpha)
 
 		linea.x = lineb.x = transition_x * 2;
 		linea.y = 0; lineb.y = LCD_ROWS-1;
+		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
+	}
+	if (section_idx == 7)
+	{
+		linea.x = LCD_COLUMNS / 2 + divider_dx1 * LCD_COLUMNS;
+		linea.y = LCD_ROWS / 2 + divider_dy1 * LCD_COLUMNS;
+		lineb.x = LCD_COLUMNS / 2 - divider_dx1 * LCD_COLUMNS;
+		lineb.y = LCD_ROWS / 2 - divider_dy1 * LCD_COLUMNS;
+		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
+
+		linea.x = LCD_COLUMNS / 2 + divider_dx2 * LCD_COLUMNS;
+		linea.y = LCD_ROWS / 2 + divider_dy2 * LCD_COLUMNS;
+		lineb.x = LCD_COLUMNS / 2 - divider_dx2 * LCD_COLUMNS;
+		lineb.y = LCD_ROWS / 2 - divider_dy2 * LCD_COLUMNS;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
 
