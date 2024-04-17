@@ -46,11 +46,11 @@ static void camera_init(Camera* cam, float3 lookFrom, float3 lookAt, float3 vup,
 	cam->vertical = v3_mulfl(cam->v, 2 * halfHeight * focusDist);
 }
 
-static int hit_unit_sphere(const Ray* r, const float3* pos, float tMax, float* outT)
+static bool hit_unit_sphere(const Ray* r, const float3* pos, float tMax, float* outT)
 {
 	float3 oc = v3_sub(r->orig, *pos);
 	float b = v3_dot(oc, r->dir);
-	float c = v3_dot(oc, oc) - 1;
+	float c = v3_dot(oc, oc) - 1.0f;
 	float discr = b * b - c;
 	if (discr > 0)
 	{
@@ -59,14 +59,15 @@ static int hit_unit_sphere(const Ray* r, const float3* pos, float tMax, float* o
 		float t = (-b - discrSq);
 		if (t <= kMinT || t >= tMax)
 		{
-			t = (-b + discrSq);
-			if (t <= kMinT || t >= tMax)
-				return 0;
+			// do not check the other intersection, as the ray never starts inside the sphere
+			//t = (-b + discrSq);
+			//if (t <= kMinT || t >= tMax)
+				return false;
 		}
 		*outT = t;
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 static int hit_ground(const Ray* r, float tMax, float3* outPos)
@@ -103,7 +104,7 @@ static float3 s_SpheresOrig[] =
 static float3 s_SpheresPos[kSphereCount];
 static int s_SphereCols[kSphereCount] =
 {
-	75, 150, 225,
+	75, 225, 150,
 };
 
 typedef struct SphereOrder {
