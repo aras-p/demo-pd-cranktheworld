@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-uint8_t* g_blue_noise;
+static uint8_t* s_blue_noise;
 
 uint8_t g_screen_buffer[LCD_COLUMNS * LCD_ROWS];
 uint8_t g_screen_buffer_2x2sml[LCD_COLUMNS/2 * LCD_ROWS/2];
@@ -95,10 +95,10 @@ int g_order_pattern_4x4[16][4] = {
 void init_pixel_ops()
 {
 	int bn_w, bn_h;
-	g_blue_noise = read_tga_file_grayscale("BlueNoise.tga", G.pd, &bn_w, &bn_h);
+	s_blue_noise = read_tga_file_grayscale("BlueNoise.tga", G.pd, &bn_w, &bn_h);
 	if (bn_w != LCD_COLUMNS || bn_h != LCD_ROWS) {
-		pd_free(g_blue_noise);
-		g_blue_noise = NULL;
+		pd_free(s_blue_noise);
+		s_blue_noise = NULL;
 	}
 
 	memset(g_screen_buffer, 0xFF, sizeof(g_screen_buffer));
@@ -109,7 +109,7 @@ void init_pixel_ops()
 void draw_dithered_scanline(const uint8_t* values, int y, int bias, uint8_t* framebuffer)
 {
 	uint8_t scanline[LCD_ROWSIZE];
-	const uint8_t* noise_row = g_blue_noise + y * LCD_COLUMNS;
+	const uint8_t* noise_row = s_blue_noise + y * LCD_COLUMNS;
 	int px = 0;
 	for (int bx = 0; bx < LCD_COLUMNS / 8; ++bx) {
 		uint8_t pixbyte = 0xFF;

@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-extern uint8_t* g_blue_noise;
 extern uint8_t g_screen_buffer[];
 extern uint8_t g_screen_buffer_2x2sml[];
 
