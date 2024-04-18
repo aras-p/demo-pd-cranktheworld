@@ -6,11 +6,11 @@
       "type": "dll",
       "exe": "${env.PLAYDATE_SDK_PATH}\\bin\\PlaydateSimulator.exe",
       "project": "CMakeLists.txt",
-      "projectTarget": "playdate_demo.dll",
-      "name": "playdate_demo.dll",
+      "projectTarget": "Nesnausk_CrankTheWorld.dll",
+      "name": "Nesnausk_CrankTheWorld.dll",
       "program": "${env.PLAYDATE_SDK_PATH}\\bin\\PlaydateSimulator.exe",
       "args": [
-        "${workspaceRoot}\\playdate_demo.pdx"
+        "${workspaceRoot}\\Nesnausk_CrankTheWorld.pdx"
       ]
     }
   ]
