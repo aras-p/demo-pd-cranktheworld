@@ -10,16 +10,32 @@
 
 static int update(void* userdata);
 
-const char* fontpath = "/System/Fonts/Roobert-10-Bold.pft";
-LCDFont* font = NULL;
+
+static const char* kFontPath = "/System/Fonts/Roobert-10-Bold.pft";
+static LCDFont* s_font = NULL;
 
 #define PLAY_MUSIC 1
 #if PLAY_MUSIC
 static const char* kMusicPath = "music.pda";
 static FilePlayer* s_music;
-//static int32_t s_music_offset_samples;
 static bool s_music_ok;
 #endif
+
+typedef struct DemoImage {
+	const char* file;
+	int x, y;
+	int tstart, tend;
+	LCDBitmap* bitmap;
+} DemoImage;
+
+static DemoImage s_images[] = {
+	{"text_everybody.pdi", 105, 8, 16, 32 },
+	{"text_wantsto.pdi", 120, 56, 17, 32 },
+	{"text_crank.pdi", 89, 103, 18, 32 },
+	{"text_theworld.pdi", 136, 163, 19, 32 },
+	{"text_instr.pdi", 5, 183, 300, 400 },
+};
+#define DEMO_IMAGE_COUNT (sizeof(s_images)/sizeof(s_images[0]))
 
 #ifdef _WINDLL
 __declspec(dllexport)
@@ -33,9 +49,16 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		G.pd = pd;
 		G.frame_count = 0;
 		G.time = G.prev_time = G.prev_prev_time = -1.0f;
-		font = pd->graphics->loadFont(fontpath, &err);	
-		if (font == NULL)
-			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
+		s_font = pd->graphics->loadFont(kFontPath, &err);
+		if (s_font == NULL)
+			pd->system->error("Could not load font %s: %s", kFontPath, err);
+
+		for (int i = 0; i < DEMO_IMAGE_COUNT; ++i)
+		{
+			s_images[i].bitmap = pd->graphics->loadBitmap(s_images[i].file, &err);
+			if (s_images[i].bitmap == NULL)
+				pd->system->error("Could not load bitmap %s: %s", s_images[i].file, err);
+		}
 
 #if PLAY_MUSIC
 		s_music_ok = false;
@@ -160,6 +183,18 @@ static int update_effect()
 	return dbg_val;
 }
 
+static void update_images()
+{
+	float t = G.time;
+	for (int i = 0; i < DEMO_IMAGE_COUNT; ++i)
+	{
+		const DemoImage* img = &s_images[i];
+		if (img->bitmap == NULL || t < img->tstart || t > img->tend)
+			continue;
+		G.pd->graphics->drawBitmap(img->bitmap, img->x, img->y, kBitmapUnflipped);
+	}
+}
+
 static int update(void* userdata)
 {
 	// track inputs and time
@@ -180,11 +215,13 @@ static int update(void* userdata)
 
 	s_beat_frame_done = beat_at_end_of_frame;
 
+	update_images();
+
 	// draw FPS, time, debug values
 	G.pd->graphics->fillRect(0, 0, 70, 32, kColorWhite);
 	char* buf;
 	int bufLen = G.pd->system->formatString(&buf, "t %i b %i v %i", (int)G.time, G.beat, dbg_value);
-	G.pd->graphics->setFont(font);
+	G.pd->graphics->setFont(s_font);
 	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
 	pd_free(buf);
 	G.pd->system->drawFPS(0,0);
