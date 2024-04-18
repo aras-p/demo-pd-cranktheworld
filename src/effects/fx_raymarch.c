@@ -261,8 +261,9 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 	st.puls_t_param = 0.0769f * sinf(pulst * 2.0f * -0.0708f);
 	st.puls_width_param = (0.08f - st.puls_t_param * 2.0f) * (G.beat ? 0.3f : 0.1f);
 
-	st.puls_sina = sinf(pulst * 0.00564f);
-	st.puls_cosa = cosf(pulst * 0.00564f);
+	float puls_rot = pulst * 0.00564f + G.crank_angle_rad;
+	st.puls_sina = sinf(puls_rot);
+	st.puls_cosa = cosf(puls_rot);
 	st.puls_pos.x = 0.5f + 0.0134f * pulst;
 	st.puls_pos.y = 1.1875f + 0.0134f * pulst;
 	st.puls_pos.z = 0.875f + 0.0134f * pulst;
