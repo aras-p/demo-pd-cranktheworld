@@ -66,6 +66,12 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 		int r = XorShift32(&G.rng);
 		s_plasma_bias = (r & 255) - 128;
 	}
+	if (G.ending)
+	{
+		s_plasma_bias = 0;
+		s_plasma_pos2 = (int)(sinf(G.crank_angle_rad) * 764);
+		s_plasma_pos4 = (int)(sinf(G.crank_angle_rad) * 431);
+	}
 
 	draw_dithered_screen(G.framebuffer, s_plasma_bias);
 }

@@ -10,7 +10,8 @@ typedef struct Blob {
 	float speed;
 } Blob;
 
-#define MAX_BLOBS 9 // 9 blobs can do 30FPS
+#define MIN_BLOBS 3
+#define MAX_BLOBS 6
 static Blob s_blobs[MAX_BLOBS];
 static int s_blob_count = 5;
 
@@ -26,8 +27,8 @@ void fx_blobs_update(float start_time, float end_time, float alpha)
 	if (G.buttons_pressed & kButtonLeft)
 	{
 		s_blob_count--;
-		if (s_blob_count < 1)
-			s_blob_count = 1;
+		if (s_blob_count < MIN_BLOBS)
+			s_blob_count = MIN_BLOBS;
 	}
 	if (G.buttons_pressed & kButtonRight)
 	{
@@ -37,7 +38,7 @@ void fx_blobs_update(float start_time, float end_time, float alpha)
 	}
 
 	// update blobs
-	float time = G.time * 0.45f;
+	float time = G.time * (0.05f + 0.4f * (cosf(G.crank_angle_rad) * 0.5f + 0.5f));
 	float offset = 0.0f;
 	for (int i = 0; i < s_blob_count; ++i) {
 		Blob* b = &s_blobs[i];
