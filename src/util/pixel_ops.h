@@ -23,3 +23,5 @@ extern int g_order_pattern_3x2[6][2];
 extern int g_order_pattern_4x2[8][2];
 extern int g_order_pattern_4x3[12][3];
 extern int g_order_pattern_4x4[16][4];
+
+void draw_line(uint8_t* framebuffer, int width, int height, int x1, int y1, int x2, int y2, uint8_t color);

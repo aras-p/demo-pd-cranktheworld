@@ -3,6 +3,7 @@
 
 #include "../allocator.h"
 #include "../globals.h"
+#include "../mathlib.h"
 
 #include "pd_api.h"
 
@@ -188,5 +189,31 @@ void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter)
 				draw_dithered_scanline(rowvalues, y * 2 + 1, 0, framebuffer);
 			}
 		}
+	}
+}
+
+// DDA line drawing algorithm, using 16.16 fixed point
+void draw_line(uint8_t* framebuffer, int width, int height, int x1, int y1, int x2, int y2, uint8_t color)
+{
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+	int abs_dx = abs(dx);
+	int abs_dy = abs(dy);
+	int steps = MAX(abs_dx, abs_dy);
+
+	int xstep_fx = (dx << 16) / steps;
+	int ystep_fx = (dy << 16) / steps;
+
+	int x_fx = x1 << 16;
+	int y_fx = y1 << 16;
+
+	for (int i = 0; i <= steps; ++i)
+	{
+		int ix = x_fx >> 16;
+		int iy = y_fx >> 16;
+		if (ix >= 0 && ix < width && iy >= 0 && iy < height)
+			framebuffer[iy * width + ix] = color;
+		x_fx += xstep_fx;
+		y_fx += ystep_fx;
 	}
 }
