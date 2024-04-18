@@ -112,7 +112,7 @@ typedef struct SphereOrder {
 	int index;
 } SphereOrder;
 static SphereOrder s_SphereOrder[kSphereCount];
-static char s_SphereVisible[kSphereCount];
+static bool s_SphereVisible[kSphereCount];
 
 // start time, duration, start height
 static float3 kSphereBounces[kSphereCount] = {
@@ -277,31 +277,54 @@ static int CompareSphereDist(const void* a, const void* b)
 
 static void do_render(float crank_angle, float time, float alpha, uint8_t* framebuffer, int framebuffer_stride)
 {
-
-	float cangle = crank_angle + (68 + time * 6) * (M_PIf / 180.0f);
+	float cangle = crank_angle + ((68 + time * 6.0f) * (G.ending ? 0.2f : 1.0f)) * (M_PIf / 180.0f);
 	float cs = cosf(cangle);
 	float ss = sinf(cangle);
-	float dist = 4.0f;
-	camera_init(&s_camera, (float3) { ss* dist, 2.3f, cs* dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
+	float cam_dist = 4.0f;
+	camera_init(&s_camera, (float3) { ss * cam_dist, 2.3f, cs * cam_dist },
+		(float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
 
-	// sort spheres by distance from camera, for primary rays
-	float eval_time = time;
-	if (G.ending)
-		eval_time = 40.0f;
+	// animate spheres
 	for (int i = 0; i < kSphereCount; ++i)
 	{
-		// animate spheres
 		float3 sp = s_SpheresOrig[i];
-		s_SphereVisible[i] = eval_time > kSphereBounces[i].x;
-		float a_bounce = 1.0f - BounceEaseOut((eval_time - kSphereBounces[i].x) / kSphereBounces[i].y);
-		float a_roll = ease_roll((eval_time - kSphereRoll[i].x) / kSphereRoll[i].y);
-		sp.x = sp.x + a_roll * kSphereRoll[i].z * (signbit(sp.x) ? -1.0f : 1.0f);
-		sp.y = 1.0f + a_bounce * kSphereBounces[i].z;
-
+		if (G.ending)
+		{
+			s_SphereVisible[i] = true;
+			if (i == 0)
+			{
+				float sphangle = time * 0.15f;
+				float sph_cs = cosf(sphangle);
+				float sph_ss = sinf(sphangle);
+				float dist = 2.1f;
+				sp.x = sph_cs * dist;
+				sp.z = sph_ss * dist;
+			}
+			if (i == 2)
+			{
+				float sphangle = time * (-0.07f);
+				float sph_cs = cosf(sphangle);
+				float sph_ss = sinf(sphangle);
+				float dist = 4.2f;
+				sp.x = sph_cs * dist;
+				sp.z = sph_ss * dist;
+			}
+		}
+		else
+		{
+			s_SphereVisible[i] = time > kSphereBounces[i].x;
+			float a_bounce = 1.0f - BounceEaseOut((time - kSphereBounces[i].x) / kSphereBounces[i].y);
+			float a_roll = ease_roll((time - kSphereRoll[i].x) / kSphereRoll[i].y);
+			sp.x = sp.x + a_roll * kSphereRoll[i].z * (signbit(sp.x) ? -1.0f : 1.0f);
+			sp.y = 1.0f + a_bounce * kSphereBounces[i].z;
+		}
 		s_SpheresPos[i] = sp;
-
+	}
+	// sort spheres by distance from camera, for primary rays
+	for (int i = 0; i < kSphereCount; ++i)
+	{
 		s_SphereOrder[i].index = i;
-		float3 vec = v3_sub(sp, s_camera.origin);
+		float3 vec = v3_sub(s_SpheresPos[i], s_camera.origin);
 		s_SphereOrder[i].dist = v3_lensq(&vec);
 	}
 	qsort(s_SphereOrder, kSphereCount, sizeof(s_SphereOrder[0]), CompareSphereDist);
