@@ -23,15 +23,16 @@ typedef struct DemoImage {
 	const char* file;
 	int x, y;
 	int tstart, tend;
+	bool ending;
 	LCDBitmap* bitmap;
 } DemoImage;
 
 static DemoImage s_images[] = {
-	{"text_everybody.pdi", 105, 8, 16, 32 },
-	{"text_wantsto.pdi", 120, 56, 17, 32 },
-	{"text_crank.pdi", 89, 103, 18, 32 },
-	{"text_theworld.pdi", 136, 163, 19, 32 },
-	{"text_instr.pdi", 5, 183, 300, 400 },
+	{"text_everybody.pdi", 105, 8, 16, 32, false },
+	{"text_wantsto.pdi", 120, 56, 17, 32, false },
+	{"text_crank.pdi", 89, 103, 18, 32, false },
+	{"text_theworld.pdi", 136, 163, 19, 32, false },
+	{"text_instr.pdi", 5, 183, 0, 64000, true },
 };
 #define DEMO_IMAGE_COUNT (sizeof(s_images)/sizeof(s_images[0]))
 
@@ -43,10 +44,13 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 	if (event == kEventInit)
 	{
 		const char* err;
+		pd_realloc = pd->system->realloc;
+
 		G.rng = 1;
 		G.pd = pd;
 		G.frame_count = 0;
 		G.time = G.prev_time = -1.0f;
+		G.ending = false;
 		s_font = pd->graphics->loadFont(kFontPath, &err);
 		if (s_font == NULL)
 			pd->system->error("Could not load font %s: %s", kFontPath, err);
@@ -58,23 +62,24 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 				pd->system->error("Could not load bitmap %s: %s", s_images[i].file, err);
 		}
 
-#if PLAY_MUSIC
-		s_music_ok = false;
-		s_music = pd->sound->fileplayer->newPlayer();
-		s_music_ok = pd->sound->fileplayer->loadIntoPlayer(s_music, kMusicPath) != 0;
-		if (s_music_ok)
-			pd->sound->fileplayer->play(s_music, 1);
-		else
-			pd->system->error("Could not load music file %s", kMusicPath);
-#endif
-
-		pd_realloc = pd->system->realloc;
-
 		init_pixel_ops();
 		fx_blobs_init();
 		fx_plasma_init();
 		fx_raytrace_init();
 		fx_starfield_init();
+
+#if PLAY_MUSIC
+		s_music_ok = false;
+		s_music = pd->sound->fileplayer->newPlayer();
+		s_music_ok = pd->sound->fileplayer->loadIntoPlayer(s_music, kMusicPath) != 0;
+		if (s_music_ok)
+		{
+			pd->sound->fileplayer->play(s_music, 1);
+			G.ending = false;
+		}
+		else
+			pd->system->error("Could not load music file %s", kMusicPath);
+#endif
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);
@@ -84,6 +89,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 }
 
 static int s_beat_frame_done = -1;
+#define TIME_SCRUB_SECONDS (5.0f)
 
 static int track_current_time()
 {
@@ -91,35 +97,39 @@ static int track_current_time()
 	G.prev_time = G.time;
 	G.time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
-	if (s_music_ok)
+	if (s_music_ok && !G.ending)
 	{
-		//G.time = (float)G.pd->sound->getCurrentTime() / 20671.875f;
-
-		// Up/Down seek in time
+		// Up/Down seek in time while music is playing
 		if (G.buttons_pressed & kButtonUp) {
 			float offset = G.pd->sound->fileplayer->getOffset(s_music);
-			offset -= 5.0f;
-			offset = MAX(0, offset);
-			G.pd->sound->fileplayer->setOffset(s_music, offset);
+			if (offset > TIME_SCRUB_SECONDS * 1.2f)
+			{
+				offset -= TIME_SCRUB_SECONDS;
+				G.pd->sound->fileplayer->setOffset(s_music, offset);
+			}
 		}
 		if (G.buttons_pressed & kButtonDown) {
 			float offset = G.pd->sound->fileplayer->getOffset(s_music);
 			offset += 5.0f;
-			offset = MAX(0, offset);
 			G.pd->sound->fileplayer->setOffset(s_music, offset);
 		}
 		G.time = G.pd->sound->fileplayer->getOffset(s_music) / TIME_UNIT_LENGTH_SECONDS;
+
+		// Did the music stop?
+		if (!G.pd->sound->fileplayer->isPlaying(s_music))
+		{
+			G.ending = true;
+			G.pd->system->resetElapsedTime();
+		}
 	}
 #endif
 
 	if (G.prev_time > G.time)
 		G.prev_time = G.time;
 
-	// "beat" is if during this frame the tick would change
+	// "beat" is if during this frame the tick would change (except when music is done, no beats then)
 	int beat_at_end_of_frame = (int)(G.time + TIME_LEN_30FPSFRAME);
-	G.beat = true;
-	if (s_beat_frame_done >= beat_at_end_of_frame)
-		G.beat = false;
+	G.beat = (G.ending || (s_beat_frame_done >= beat_at_end_of_frame)) ? false : true;
 	return beat_at_end_of_frame;
 }
 
@@ -139,35 +149,42 @@ static DemoEffect s_effects[] = {
 };
 #define DEMO_EFFECT_COUNT (sizeof(s_effects)/sizeof(s_effects[0]))
 
+static int s_cur_effect = DEMO_EFFECT_COUNT - 1;
+
 
 static void update_effect()
 {
-#if 0
-	// A/B switch between effects
-	if (G.buttons_pressed & kButtonB) {
-		s_cur_effect--;
-		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
-			s_cur_effect = kFxCount - 1;
-	}
-	if (G.buttons_pressed & kButtonA) {
-		s_cur_effect++;
-		if (s_cur_effect < 0 || s_cur_effect >= kFxCount)
-			s_cur_effect = 0;
-	}
-#endif
-
-	float t = G.time;
-	bool has_fx = false;
-	for (int i = 0; i < DEMO_EFFECT_COUNT; ++i)
+	if (!G.ending)
 	{
-		const DemoEffect* fx = &s_effects[i];
-		if (t >= fx->start_time && t < fx->end_time)
+		// regular demo part: timeline of effects
+		float t = G.time;
+		for (int i = 0; i < DEMO_EFFECT_COUNT; ++i)
 		{
-			float a = invlerp(fx->start_time, fx->end_time, t);
-			fx->update(fx->start_time, fx->end_time, a);
-			has_fx = true;
-			break;
+			const DemoEffect* fx = &s_effects[i];
+			if (t >= fx->start_time && t < fx->end_time)
+			{
+				float a = invlerp(fx->start_time, fx->end_time, t);
+				fx->update(fx->start_time, fx->end_time, a);
+				break;
+			}
 		}
+	}
+	else
+	{
+		// after demo finish: interactive part
+		// A/B switch between effects
+		if (G.buttons_pressed & kButtonB) {
+			s_cur_effect--;
+			if (s_cur_effect < 0 || s_cur_effect >= DEMO_EFFECT_COUNT)
+				s_cur_effect = DEMO_EFFECT_COUNT - 1;
+		}
+		if (G.buttons_pressed & kButtonA) {
+			s_cur_effect++;
+			if (s_cur_effect < 0 || s_cur_effect >= DEMO_EFFECT_COUNT)
+				s_cur_effect = 0;
+		}
+		const DemoEffect* fx = &s_effects[s_cur_effect];
+		fx->update(fx->start_time, fx->end_time, 0.5f);
 	}
 }
 
@@ -177,7 +194,7 @@ static void update_images()
 	for (int i = 0; i < DEMO_IMAGE_COUNT; ++i)
 	{
 		const DemoImage* img = &s_images[i];
-		if (img->bitmap == NULL || t < img->tstart || t > img->tend)
+		if (img->bitmap == NULL || G.ending != img->ending || t < img->tstart || t > img->tend)
 			continue;
 		G.pd->graphics->drawBitmap(img->bitmap, img->x, img->y, kBitmapUnflipped);
 	}

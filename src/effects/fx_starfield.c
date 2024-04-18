@@ -28,6 +28,9 @@ void fx_starfield_update(float start_time, float end_time, float alpha)
 {
 	float dt = G.time - G.prev_time;
 
+	if (G.ending)
+		alpha = 1.0f - (cosf(G.crank_angle_rad) * 0.5f + 0.5f);
+
 	float speed_a = CubicEaseIn(alpha) * 0.8f + 0.2f;
 	dt *= speed_a;
 
@@ -40,7 +43,7 @@ void fx_starfield_update(float start_time, float end_time, float alpha)
 	else
 	{
 		draw_count = (int)lerp(STARS_MID, STARS_END, (alpha - 0.5f) * 2.0f);
-		if (G.beat)
+		if (G.beat || G.ending)
 			G.pd->graphics->clear(kColorWhite);
 	}
 
@@ -66,8 +69,6 @@ void fx_starfield_update(float start_time, float end_time, float alpha)
 		uint8_t* row = G.framebuffer + py * G.framebuffer_stride;
 		put_pixel_black(row, px);
 	}
-
-	return draw_count;
 }
 
 void fx_starfield_init()

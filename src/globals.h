@@ -18,6 +18,7 @@ typedef struct Globals
 	float prev_time;
 	int frame_count;
 	bool beat; // is current frame on the "beat"
+	bool ending; // "ending" / interactive part after music
 
 	// screen
 	uint8_t* framebuffer;

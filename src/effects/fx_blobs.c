@@ -21,7 +21,7 @@ static void blob_init(Blob* b)
 	b->speed = (RandomFloat01(&G.rng) * 2.0f - 1.0f);
 }
 
-int fx_blobs_update(float start_time, float end_time, float alpha)
+void fx_blobs_update(float start_time, float end_time, float alpha)
 {
 	if (G.buttons_pressed & kButtonLeft)
 	{
@@ -77,8 +77,6 @@ int fx_blobs_update(float start_time, float end_time, float alpha)
 		}
 	}
 	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
-
-	return s_blob_count;
 }
 
 void fx_blobs_init()

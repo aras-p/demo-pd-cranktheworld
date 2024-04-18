@@ -233,7 +233,7 @@ static int trace_puls(TraceState* st, float x, float y)
 
 static float s_prev_divider_dx1, s_prev_divider_dy1, s_prev_divider_dx2, s_prev_divider_dy2;
 
-int fx_raymarch_update(float start_time, float end_time, float alpha)
+void fx_raymarch_update(float start_time, float end_time, float alpha)
 {
 	TraceState st;
 	st.t = G.time;
@@ -448,6 +448,4 @@ int fx_raymarch_update(float start_time, float end_time, float alpha)
 	s_prev_divider_dy1 = divider_dy1;
 	s_prev_divider_dx2 = divider_dx2;
 	s_prev_divider_dy2 = divider_dy2;
-
-	return 0;
 }

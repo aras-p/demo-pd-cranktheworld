@@ -275,9 +275,8 @@ static int CompareSphereDist(const void* a, const void* b)
 	return 0;
 }
 
-static void do_render(float crank_angle, float time, uint8_t* framebuffer, int framebuffer_stride)
+static void do_render(float crank_angle, float time, float alpha, uint8_t* framebuffer, int framebuffer_stride)
 {
-	//time = 24; // debug
 
 	float cangle = crank_angle + (68 + time * 6) * (M_PIf / 180.0f);
 	float cs = cosf(cangle);
@@ -285,15 +284,17 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	float dist = 4.0f;
 	camera_init(&s_camera, (float3) { ss* dist, 2.3f, cs* dist }, (float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
 
-
 	// sort spheres by distance from camera, for primary rays
+	float eval_time = time;
+	if (G.ending)
+		eval_time = 40.0f;
 	for (int i = 0; i < kSphereCount; ++i)
 	{
 		// animate spheres
 		float3 sp = s_SpheresOrig[i];
-		s_SphereVisible[i] = time > kSphereBounces[i].x;
-		float a_bounce = 1.0f - BounceEaseOut((time - kSphereBounces[i].x) / kSphereBounces[i].y);
-		float a_roll = ease_roll((time - kSphereRoll[i].x) / kSphereRoll[i].y);
+		s_SphereVisible[i] = eval_time > kSphereBounces[i].x;
+		float a_bounce = 1.0f - BounceEaseOut((eval_time - kSphereBounces[i].x) / kSphereBounces[i].y);
+		float a_roll = ease_roll((eval_time - kSphereRoll[i].x) / kSphereRoll[i].y);
 		sp.x = sp.x + a_roll * kSphereRoll[i].z * (signbit(sp.x) ? -1.0f : 1.0f);
 		sp.y = 1.0f + a_bounce * kSphereBounces[i].z;
 
@@ -341,10 +342,9 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	draw_dithered_screen(framebuffer, bias);
 }
 
-int fx_raytrace_update(float start_time, float end_time, float alpha)
+void fx_raytrace_update(float start_time, float end_time, float alpha)
 {
-	do_render(G.crank_angle_rad, G.time - start_time, G.framebuffer, G.framebuffer_stride);
-	return 0;
+	do_render(G.crank_angle_rad, G.ending ? G.time : G.time - start_time, alpha, G.framebuffer, G.framebuffer_stride);
 }
 
 void fx_raytrace_init()

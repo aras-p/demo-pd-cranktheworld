@@ -37,7 +37,7 @@ static int trace_ray(TraceState* st, float x, float y)
 	return MIN(255, (int)(res * 250.0f));
 }
 
-int fx_prettyhip_update(float start_time, float end_time, float alpha)
+void fx_prettyhip_update(float start_time, float end_time, float alpha)
 {
 	TraceState st;
 	st.t = G.time * 0.3f;
@@ -72,5 +72,4 @@ int fx_prettyhip_update(float start_time, float end_time, float alpha)
 		}
 	}
 	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
-	return 0;
 }
