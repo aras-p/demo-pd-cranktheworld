@@ -231,6 +231,7 @@ static int trace_puls(TraceState* st, float x, float y)
 
 // ------------------------------------------
 
+static float s_prev_divider_dx1, s_prev_divider_dy1, s_prev_divider_dx2, s_prev_divider_dy2;
 
 int fx_raymarch_update(float alpha, float prev_alpha)
 {
@@ -428,18 +429,25 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 	}
 	if (section_idx >= 7)
 	{
-		linea.x = LCD_COLUMNS / 2 + divider_dx1 * LCD_COLUMNS;
-		linea.y = LCD_ROWS / 2 + divider_dy1 * LCD_COLUMNS;
-		lineb.x = LCD_COLUMNS / 2 - divider_dx1 * LCD_COLUMNS;
-		lineb.y = LCD_ROWS / 2 - divider_dy1 * LCD_COLUMNS;
+		// draw rotating divider lines at previous frame angles, looks a tiny bit
+		// better due to temporal stuff
+		linea.x = LCD_COLUMNS / 2 + s_prev_divider_dx1 * LCD_COLUMNS;
+		linea.y = LCD_ROWS / 2 + s_prev_divider_dy1 * LCD_COLUMNS;
+		lineb.x = LCD_COLUMNS / 2 - s_prev_divider_dx1 * LCD_COLUMNS;
+		lineb.y = LCD_ROWS / 2 - s_prev_divider_dy1 * LCD_COLUMNS;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 
-		linea.x = LCD_COLUMNS / 2 + divider_dx2 * LCD_COLUMNS;
-		linea.y = LCD_ROWS / 2 + divider_dy2 * LCD_COLUMNS;
-		lineb.x = LCD_COLUMNS / 2 - divider_dx2 * LCD_COLUMNS;
-		lineb.y = LCD_ROWS / 2 - divider_dy2 * LCD_COLUMNS;
+		linea.x = LCD_COLUMNS / 2 + s_prev_divider_dx2 * LCD_COLUMNS;
+		linea.y = LCD_ROWS / 2 + s_prev_divider_dy2 * LCD_COLUMNS;
+		lineb.x = LCD_COLUMNS / 2 - s_prev_divider_dx2 * LCD_COLUMNS;
+		lineb.y = LCD_ROWS / 2 - s_prev_divider_dy2 * LCD_COLUMNS;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
+
+	s_prev_divider_dx1 = divider_dx1;
+	s_prev_divider_dy1 = divider_dy1;
+	s_prev_divider_dx2 = divider_dx2;
+	s_prev_divider_dy2 = divider_dy2;
 
 	return 0;
 }
