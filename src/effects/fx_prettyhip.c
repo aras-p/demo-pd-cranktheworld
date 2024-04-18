@@ -37,7 +37,7 @@ static int trace_ray(TraceState* st, float x, float y)
 	return MIN(255, (int)(res * 250.0f));
 }
 
-int fx_prettyhip_update(float alpha)
+int fx_prettyhip_update(float start_time, float end_time, float alpha)
 {
 	TraceState st;
 	st.t = G.time * 0.3f;

@@ -233,7 +233,7 @@ static int trace_puls(TraceState* st, float x, float y)
 
 static float s_prev_divider_dx1, s_prev_divider_dy1, s_prev_divider_dx2, s_prev_divider_dy2;
 
-int fx_raymarch_update(float alpha, float prev_alpha)
+int fx_raymarch_update(float start_time, float end_time, float alpha)
 {
 	TraceState st;
 	st.t = G.time;
@@ -383,10 +383,10 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 		}
 		else if (section_idx >= 7) // same as above, divider lines rotating
 		{
-			float pdy = py - LCD_ROWS / 4;
+			float pdy = (float)(py - LCD_ROWS / 4);
 			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
-				float pdx = px - LCD_COLUMNS / 4;
+				float pdx = (float)(px - LCD_COLUMNS / 4);
 				float det1 = divider_dx1 * pdy - divider_dy1 * pdx;
 				float det2 = divider_dx2 * pdy - divider_dy2 * pdx;
 				int quad_index = (det1 >= 0.0f ? 0 : 1) + (det2 >= 0.0f ? 2 : 0);
@@ -414,7 +414,7 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 	if (section_idx == 5)
 	{
 		linea.x = 0; lineb.x = LCD_COLUMNS - 1;
-		linea.y = lineb.y = transition_y * 2;
+		linea.y = lineb.y = (float)(transition_y * 2);
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
 	if (section_idx == 6)
@@ -423,7 +423,7 @@ int fx_raymarch_update(float alpha, float prev_alpha)
 		linea.y = lineb.y = LCD_ROWS/2;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 
-		linea.x = lineb.x = transition_x * 2;
+		linea.x = lineb.x = (float)(transition_x * 2);
 		linea.y = 0; lineb.y = LCD_ROWS-1;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}

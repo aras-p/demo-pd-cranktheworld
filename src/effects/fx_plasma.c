@@ -25,7 +25,7 @@ static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
 static int s_plasma_bias = 0;
 
-int fx_plasma_update(float alpha)
+int fx_plasma_update(float start_time, float end_time, float alpha)
 {
 	int tpos4 = s_plasma_pos4;
 	int tpos3 = s_plasma_pos3;

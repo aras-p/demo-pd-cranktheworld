@@ -341,9 +341,9 @@ static void do_render(float crank_angle, float time, uint8_t* framebuffer, int f
 	draw_dithered_screen(framebuffer, bias);
 }
 
-int fx_raytrace_update(float rel_time, float alpha)
+int fx_raytrace_update(float start_time, float end_time, float alpha)
 {
-	do_render(G.crank_angle_rad, rel_time, G.framebuffer, G.framebuffer_stride);
+	do_render(G.crank_angle_rad, G.time - start_time, G.framebuffer, G.framebuffer_stride);
 	return 0;
 }
 

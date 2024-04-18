@@ -46,7 +46,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		G.rng = 1;
 		G.pd = pd;
 		G.frame_count = 0;
-		G.time = G.prev_time = G.prev_prev_time = -1.0f;
+		G.time = G.prev_time = -1.0f;
 		s_font = pd->graphics->loadFont(kFontPath, &err);
 		if (s_font == NULL)
 			pd->system->error("Could not load font %s: %s", kFontPath, err);
@@ -88,7 +88,6 @@ static int s_beat_frame_done = -1;
 static int track_current_time()
 {
 	G.frame_count++;
-	G.prev_prev_time = G.prev_time;
 	G.prev_time = G.time;
 	G.time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
@@ -115,8 +114,6 @@ static int track_current_time()
 
 	if (G.prev_time > G.time)
 		G.prev_time = G.time;
-	if (G.prev_prev_time > G.prev_time)
-		G.prev_prev_time = G.prev_time;
 
 	// "beat" is if during this frame the tick would change
 	int beat_at_end_of_frame = (int)(G.time + TIME_LEN_30FPSFRAME);
@@ -126,7 +123,24 @@ static int track_current_time()
 	return beat_at_end_of_frame;
 }
 
-static int update_effect()
+typedef struct DemoEffect {
+	float start_time;
+	float end_time;
+	fx_update_function update;
+} DemoEffect;
+
+static DemoEffect s_effects[] = {
+	{0, 32, fx_starfield_update},
+	{32, 64, fx_prettyhip_update},
+	{64, 80, fx_plasma_update},
+	{80, 96, fx_blobs_update},
+	{96, 240, fx_raymarch_update},
+	{240, 304, fx_raytrace_update},
+};
+#define DEMO_EFFECT_COUNT (sizeof(s_effects)/sizeof(s_effects[0]))
+
+
+static void update_effect()
 {
 #if 0
 	// A/B switch between effects
@@ -142,41 +156,19 @@ static int update_effect()
 	}
 #endif
 
-	int dbg_val = 0;
 	float t = G.time;
-	if (t < 32)
+	bool has_fx = false;
+	for (int i = 0; i < DEMO_EFFECT_COUNT; ++i)
 	{
-		float a = t / 32.0f;
-		dbg_val = fx_starfield_update(a);
+		const DemoEffect* fx = &s_effects[i];
+		if (t >= fx->start_time && t < fx->end_time)
+		{
+			float a = invlerp(fx->start_time, fx->end_time, t);
+			fx->update(fx->start_time, fx->end_time, a);
+			has_fx = true;
+			break;
+		}
 	}
-	else if (t < 64)
-	{
-		float a = (t - 32.0f) / 32.0f;
-		dbg_val = fx_prettyhip_update(a);
-	}
-	else if (t < 80)
-	{
-		float a = invlerp(64.0f, 80.0f, t);
-		dbg_val = fx_plasma_update(a);
-	}
-	else if (t < 96)
-	{
-		float a = invlerp(80.0f, 96.0f, t);
-		dbg_val = fx_blobs_update(a);
-	}
-	else if (t < 240)
-	{
-		float a = invlerp(96.0f, 240.0f, t);
-		float prev_a = invlerp(96.0f, 240.0f, G.prev_prev_time);
-		dbg_val = fx_raymarch_update(a, prev_a);
-	}
-	else
-	{
-		float rt = t - 240.0f;
-		float a = invlerp(240.0f, 304.0f, t);
-		dbg_val = fx_raytrace_update(rt, a);
-	}
-	return dbg_val;
 }
 
 static void update_images()
@@ -206,7 +198,7 @@ static int update(void* userdata)
 	G.framebuffer_stride = LCD_ROWSIZE;
 
 	// update the effect
-	int dbg_value = update_effect();
+	update_effect();
 
 	s_beat_frame_done = beat_at_end_of_frame;
 
@@ -215,7 +207,7 @@ static int update(void* userdata)
 	// draw FPS, time, debug values
 	G.pd->graphics->fillRect(0, 0, 70, 32, kColorWhite);
 	char* buf;
-	int bufLen = G.pd->system->formatString(&buf, "t %i b %i v %i", (int)G.time, G.beat, dbg_value);
+	int bufLen = G.pd->system->formatString(&buf, "t %i", (int)G.time);
 	G.pd->graphics->setFont(s_font);
 	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
 	pd_free(buf);

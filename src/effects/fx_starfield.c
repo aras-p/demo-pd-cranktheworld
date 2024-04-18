@@ -24,7 +24,7 @@ static void star_init(Star* s, uint32_t* rng)
 	s->speed = RandomFloat01(rng) * 70 + 30;
 }
 
-int fx_starfield_update(float alpha)
+void fx_starfield_update(float start_time, float end_time, float alpha)
 {
 	float dt = G.time - G.prev_time;
 
