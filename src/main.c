@@ -8,9 +8,12 @@
 
 static int update(void* userdata);
 
+//#define SHOW_STATS 1
 
+#if SHOW_STATS
 static const char* kFontPath = "/System/Fonts/Roobert-10-Bold.pft";
 static LCDFont* s_font = NULL;
+#endif
 
 #define PLAY_MUSIC 1
 #if PLAY_MUSIC
@@ -51,9 +54,11 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		G.frame_count = 0;
 		G.time = G.prev_time = -1.0f;
 		G.ending = false;
+#if SHOW_STATS
 		s_font = pd->graphics->loadFont(kFontPath, &err);
 		if (s_font == NULL)
 			pd->system->error("Could not load font %s: %s", kFontPath, err);
+#endif
 
 		for (int i = 0; i < DEMO_IMAGE_COUNT; ++i)
 		{
@@ -235,14 +240,16 @@ static int update(void* userdata)
 
 	update_images();
 
-	// draw FPS, time, debug values
-	G.pd->graphics->fillRect(0, 0, 70, 32, kColorWhite);
+	// draw FPS, time
+#if SHOW_STATS
+	G.pd->graphics->fillRect(0, 0, 40, 32, kColorWhite);
 	char* buf;
 	int bufLen = G.pd->system->formatString(&buf, "t %i", (int)G.time);
 	G.pd->graphics->setFont(s_font);
 	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
 	pd_free(buf);
 	G.pd->system->drawFPS(0,0);
+#endif
 
 	// tell OS that we've updated the whole screen
 	G.pd->graphics->markUpdatedRows(0, LCD_ROWS-1);
