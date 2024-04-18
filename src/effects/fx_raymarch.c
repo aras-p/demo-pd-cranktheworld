@@ -279,7 +279,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 	int transition_x = (int)(LCD_COLUMNS / 4 * transition_in);
 	int transition_y = (int)(LCD_ROWS / 4 * transition_in);
 	bool section8 = section_idx == 8;
-	float divider_angle1 = section_alpha * M_PIf + (section8 ? M_PIf : 0.0f);
+	float divider_angle1 = G.ending ? G.crank_angle_rad : (section_alpha * M_PIf + (section8 ? M_PIf : 0.0f));
 	float divider_angle2 = divider_angle1 + (M_PIf * 0.5f) * (section8 ? (1.0f+section_alpha) : 1.0f);
 	float divider_dx1 = cosf(divider_angle1);
 	float divider_dy1 = sinf(divider_angle1);
@@ -424,7 +424,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		linea.y = lineb.y = LCD_ROWS/2;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 
-		linea.x = lineb.x = (float)(transition_x * 2);
+		linea.x = lineb.x = 1 + (float)(transition_x * 2);
 		linea.y = 0; lineb.y = LCD_ROWS-1;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
@@ -432,15 +432,15 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 	{
 		// draw rotating divider lines at previous frame angles, looks a tiny bit
 		// better due to temporal stuff
-		linea.x = LCD_COLUMNS / 2 + s_prev_divider_dx1 * LCD_COLUMNS;
+		linea.x = 1 + LCD_COLUMNS / 2 + s_prev_divider_dx1 * LCD_COLUMNS;
 		linea.y = LCD_ROWS / 2 + s_prev_divider_dy1 * LCD_COLUMNS;
-		lineb.x = LCD_COLUMNS / 2 - s_prev_divider_dx1 * LCD_COLUMNS;
+		lineb.x = 1 + LCD_COLUMNS / 2 - s_prev_divider_dx1 * LCD_COLUMNS;
 		lineb.y = LCD_ROWS / 2 - s_prev_divider_dy1 * LCD_COLUMNS;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 
-		linea.x = LCD_COLUMNS / 2 + s_prev_divider_dx2 * LCD_COLUMNS;
+		linea.x = 1 + LCD_COLUMNS / 2 + s_prev_divider_dx2 * LCD_COLUMNS;
 		linea.y = LCD_ROWS / 2 + s_prev_divider_dy2 * LCD_COLUMNS;
-		lineb.x = LCD_COLUMNS / 2 - s_prev_divider_dx2 * LCD_COLUMNS;
+		lineb.x = 1 + LCD_COLUMNS / 2 - s_prev_divider_dx2 * LCD_COLUMNS;
 		lineb.y = LCD_ROWS / 2 - s_prev_divider_dy2 * LCD_COLUMNS;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}

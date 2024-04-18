@@ -137,6 +137,7 @@ typedef struct DemoEffect {
 	float start_time;
 	float end_time;
 	fx_update_function update;
+	float ending_alpha;
 } DemoEffect;
 
 static DemoEffect s_effects[] = {
@@ -149,7 +150,20 @@ static DemoEffect s_effects[] = {
 };
 #define DEMO_EFFECT_COUNT (sizeof(s_effects)/sizeof(s_effects[0]))
 
-static int s_cur_effect = DEMO_EFFECT_COUNT - 1;
+static DemoEffect s_ending_effects[] = {
+	{0, 32, fx_starfield_update, 0.5f},
+	{32, 64, fx_prettyhip_update, 0.5f},
+	{64, 80, fx_plasma_update, 0.5f},
+	{80, 96, fx_blobs_update, 0.5f},
+	{96, 240, fx_raymarch_update, 0.2f}, // xor towers
+	{96, 240, fx_raymarch_update, 0.3f}, // sponge
+	{96, 240, fx_raymarch_update, 0.4f}, // puls
+	{96, 240, fx_raymarch_update, 0.8f}, // 4x fx rotating
+	{240, 304, fx_raytrace_update, 0.5f},
+};
+#define DEMO_ENDING_EFFECT_COUNT (sizeof(s_ending_effects)/sizeof(s_ending_effects[0]))
+
+static int s_cur_effect = DEMO_ENDING_EFFECT_COUNT - 1;
 
 
 static void update_effect()
@@ -175,16 +189,16 @@ static void update_effect()
 		// A/B switch between effects
 		if (G.buttons_pressed & kButtonB) {
 			s_cur_effect--;
-			if (s_cur_effect < 0 || s_cur_effect >= DEMO_EFFECT_COUNT)
-				s_cur_effect = DEMO_EFFECT_COUNT - 1;
+			if (s_cur_effect < 0 || s_cur_effect >= DEMO_ENDING_EFFECT_COUNT)
+				s_cur_effect = DEMO_ENDING_EFFECT_COUNT - 1;
 		}
 		if (G.buttons_pressed & kButtonA) {
 			s_cur_effect++;
-			if (s_cur_effect < 0 || s_cur_effect >= DEMO_EFFECT_COUNT)
+			if (s_cur_effect < 0 || s_cur_effect >= DEMO_ENDING_EFFECT_COUNT)
 				s_cur_effect = 0;
 		}
-		const DemoEffect* fx = &s_effects[s_cur_effect];
-		fx->update(fx->start_time, fx->end_time, 0.5f);
+		const DemoEffect* fx = &s_ending_effects[s_cur_effect];
+		fx->update(fx->start_time, fx->end_time, fx->ending_alpha);
 	}
 }
 
