@@ -72,11 +72,9 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 
 		init_pixel_ops();
 		fx_blobs_init();
-		fx_planes_init();
 		fx_plasma_init();
 		fx_raytrace_init();
 		fx_starfield_init();
-		fx_voxel_init();
 
 		pd->system->resetElapsedTime();
 		pd->system->setUpdateCallback(update, pd);

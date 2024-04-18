@@ -222,7 +222,7 @@ static int trace_puls(TraceState* st, float x, float y)
 	}
 
 	//return (int)(((float)j) / (float)MAXSTEP * 255.0f);
-	int res = (t - 0.4f) * (255.0f * 0.25f);
+	int res = (int)((t - 0.4f) * (255.0f * 0.25f));
 	res = MIN(255, res);
 	res = MAX(0, res);
 	return res;

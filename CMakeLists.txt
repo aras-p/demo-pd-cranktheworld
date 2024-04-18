@@ -40,28 +40,17 @@ set (DEMO_SOURCES
 	src/mathlib.h
 	src/effects/fx.h
 	src/effects/fx_blobs.c
-	src/effects/fx_kefren.c
-	src/effects/fx_moire.c
-	src/effects/fx_planes.c
 	src/effects/fx_plasma.c
 	src/effects/fx_prettyhip.c
 	src/effects/fx_raymarch.c
 	src/effects/fx_raytrace.c
 	src/effects/fx_starfield.c
-	src/effects/fx_temporal_test.c
-	src/effects/fx_voxel.c
 	src/mini3d/render.c
 	src/mini3d/render.h
-	src/mini3d/scene.c
-	src/mini3d/scene.h
-	src/mini3d/shape.c
-	src/mini3d/shape.h
 	src/util/pixel_ops.c
 	src/util/pixel_ops.h
 	src/util/image_loader.c
 	src/util/image_loader.h
-	src/external/bitshifter_radixsort/radixsort.c
-	src/external/bitshifter_radixsort/radixsort.h
 	src/external/aheasing/easing.c
 	src/external/aheasing/easing.h
 )
