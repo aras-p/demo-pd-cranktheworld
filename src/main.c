@@ -158,16 +158,16 @@ static int update_effect()
 		float a = (t - 32.0f) / 32.0f;
 		dbg_val = fx_prettyhip_update(a);
 	}
-	else if (t < 96)
+	else if (t < 80)
 	{
-		float a = (t - 64.0f) / 32.0f;
+		float a = invlerp(64.0f, 80.0f, t);
 		dbg_val = fx_plasma_update(a);
 	}
-	//else if (t < 96)
-	//{
-	//	float a = (t - 80.0f) / 16.0f;
-	//	dbg_val = fx_blobs_update(a);
-	//}
+	else if (t < 96)
+	{
+		float a = invlerp(80.0f, 96.0f, t);
+		dbg_val = fx_blobs_update(a);
+	}
 	else if (t < 240)
 	{
 		float a = invlerp(96.0f, 240.0f, t);
@@ -208,7 +208,6 @@ static int update(void* userdata)
 
 	G.framebuffer = G.pd->graphics->getFrame();
 	G.framebuffer_stride = LCD_ROWSIZE;
-	G.pd->graphics->clear(kColorWhite); //@TODO: skip if not needed
 
 	// update the effect
 	int dbg_value = update_effect();
@@ -225,6 +224,9 @@ static int update(void* userdata)
 	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
 	pd_free(buf);
 	G.pd->system->drawFPS(0,0);
+
+	// tell OS that we've updated the whole screen
+	G.pd->graphics->markUpdatedRows(0, LCD_ROWS-1);
 
 	return 1;
 }

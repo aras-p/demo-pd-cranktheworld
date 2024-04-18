@@ -33,9 +33,16 @@ int fx_starfield_update(float alpha)
 
 	int draw_count;
 	if (alpha < 0.5f)
+	{
 		draw_count = (int)lerp(STARS_START, STARS_MID, alpha * 2.0f);
+		G.pd->graphics->clear(kColorWhite);
+	}
 	else
-		draw_count = (int)lerp(STARS_MID, STARS_END, (alpha-0.5f) * 2.0f);
+	{
+		draw_count = (int)lerp(STARS_MID, STARS_END, (alpha - 0.5f) * 2.0f);
+		if (G.beat)
+			G.pd->graphics->clear(kColorWhite);
+	}
 
 	for (int i = 0; i < draw_count; ++i)
 	{
