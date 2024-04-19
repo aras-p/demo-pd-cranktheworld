@@ -1,5 +1,7 @@
+bundleID=org.nesnausk.pd-cranktheworld
+version=1.0.0
+buildNumber=1
 name=Everybody Wants to Crank the World
 author=Aras Pranckevicius
-description=TODO
-bundleID=org.nesnausk.pd-cranktheworld
-imagePath=
+description=A semi-interactive demoscene demo for Playdate
+imagePath=sys_img/
