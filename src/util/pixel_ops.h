@@ -6,6 +6,7 @@ extern uint8_t g_screen_buffer[];
 extern uint8_t g_screen_buffer_2x2sml[];
 
 void init_pixel_ops();
+void clear_screen_buffers();
 
 static inline void put_pixel_black(uint8_t* row, int x)
 {

@@ -196,11 +196,13 @@ static void update_effect()
 		// after demo finish: interactive part
 		// A/B switch between effects
 		if (G.buttons_pressed & kButtonB) {
+			clear_screen_buffers();
 			s_cur_effect--;
 			if (s_cur_effect < 0 || s_cur_effect >= DEMO_ENDING_EFFECT_COUNT)
 				s_cur_effect = DEMO_ENDING_EFFECT_COUNT - 1;
 		}
 		if (G.buttons_pressed & kButtonA) {
+			clear_screen_buffers();
 			s_cur_effect++;
 			if (s_cur_effect < 0 || s_cur_effect >= DEMO_ENDING_EFFECT_COUNT)
 				s_cur_effect = 0;

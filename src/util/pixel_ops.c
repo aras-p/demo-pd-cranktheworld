@@ -14,6 +14,13 @@ static uint8_t* s_blue_noise;
 uint8_t g_screen_buffer[LCD_COLUMNS * LCD_ROWS];
 uint8_t g_screen_buffer_2x2sml[LCD_COLUMNS/2 * LCD_ROWS/2];
 
+void clear_screen_buffers()
+{
+	memset(g_screen_buffer, 0xFF, sizeof(g_screen_buffer));
+	memset(g_screen_buffer_2x2sml, 0xFF, sizeof(g_screen_buffer_2x2sml));
+}
+
+
 // 2x2 pixel block ordered dither matrix.
 // 0 3
 // 2 1
