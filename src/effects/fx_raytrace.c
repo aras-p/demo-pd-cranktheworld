@@ -97,9 +97,9 @@ static Camera s_camera;
 
 static float3 s_SpheresOrig[] =
 {
-	{2.5f,1,0},
+	{2.1f,1,0},
 	{0,1,0},
-	{-2.5f,1,0},
+	{-4.2f,1,0},
 };
 #define kSphereCount (sizeof(s_SpheresOrig) / sizeof(s_SpheresOrig[0]))
 static float3 s_SpheresPos[kSphereCount];
@@ -121,18 +121,12 @@ static float3 kSphereBounces[kSphereCount] = {
 	{22.0f, 6.0f, 8.0f},
 	{14.0f, 6.0f, 8.0f},
 };
-// start time, duration, end distance
+// start time, speed, <unused>
 static float3 kSphereRoll[kSphereCount] = {
-	{48.0f, 16.0f, 8.0f},
-	{48.0f, 16.0f, 0.0f},
-	{48.0f, 16.0f, 8.0f},
+	{12.0f, 0.06f, 0.0f},
+	{0.0f, 0.0f, 0.0f},
+	{20.0f, -0.19f, 0.0f},
 };
-
-static float ease_roll(float x)
-{
-	x = saturate(x);
-	return 2.7f * x * x * x - 0.3f * x * x - 0.5f * x;
-}
 
 static float3 s_LightDir;
 
@@ -289,35 +283,20 @@ static void do_render(float crank_angle, float time, float start_time, float end
 	for (int i = 0; i < kSphereCount; ++i)
 	{
 		float3 sp = s_SpheresOrig[i];
-		if (G.ending)
+		s_SphereVisible[i] = G.ending || time > kSphereBounces[i].x;
+		if (!G.ending)
 		{
-			s_SphereVisible[i] = true;
-			if (i == 0)
-			{
-				float sphangle = time * 0.15f;
-				float sph_cs = cosf(sphangle);
-				float sph_ss = sinf(sphangle);
-				float dist = 2.1f;
-				sp.x = sph_cs * dist;
-				sp.z = sph_ss * dist;
-			}
-			if (i == 2)
-			{
-				float sphangle = time * (-0.07f);
-				float sph_cs = cosf(sphangle);
-				float sph_ss = sinf(sphangle);
-				float dist = 4.2f;
-				sp.x = sph_cs * dist;
-				sp.z = sph_ss * dist;
-			}
-		}
-		else
-		{
-			s_SphereVisible[i] = time > kSphereBounces[i].x;
 			float a_bounce = 1.0f - BounceEaseOut((time - kSphereBounces[i].x) / kSphereBounces[i].y);
-			float a_roll = ease_roll((time - kSphereRoll[i].x) / kSphereRoll[i].y);
-			sp.x = sp.x + a_roll * kSphereRoll[i].z * (signbit(sp.x) ? -1.0f : 1.0f);
 			sp.y = 1.0f + a_bounce * kSphereBounces[i].z;
+		}
+		if ((G.ending || time > kSphereRoll[i].x) && kSphereRoll[i].y != 0.0f)
+		{
+			float sphangle = (time - kSphereRoll[i].x) * kSphereRoll[i].y;
+			float sph_cs = cosf(sphangle);
+			float sph_ss = sinf(sphangle);
+			float dist = sp.x;
+			sp.x = sph_cs * dist;
+			sp.z = sph_ss * dist;
 		}
 		s_SpheresPos[i] = sp;
 	}
