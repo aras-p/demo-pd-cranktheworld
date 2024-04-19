@@ -8,12 +8,23 @@
 // Background: loosely based on "Pretty Hip" by Fabrice Neyret https://www.shadertoy.com/view/XsBfRW
 // Foreground: traditional "Kefren Bars"
 
-#define MAX_BARS (240)
+#define MAX_LOOKUP_EXTENT (12)
 
-static int s_bar_count = 120;
+static float s_uxuy_lookup[MAX_LOOKUP_EXTENT][MAX_LOOKUP_EXTENT];
 
-#define BAR_WIDTH (17)
-static uint8_t kBarColors[BAR_WIDTH] = { 5, 50, 96, 134, 165, 189, 206, 216, 220, 216, 206, 189, 165, 134, 96, 50, 5 };
+void fx_prettyhip_init()
+{
+	for (int iy = 0; iy < MAX_LOOKUP_EXTENT; ++iy)
+	{
+		for (int ix = 0; ix < MAX_LOOKUP_EXTENT; ++ix)
+		{
+			float cx = (float)ix - 5.5f;
+			float cy = (float)iy - 5.5f;
+			float s = sqrtf(cx * cx + cy * cy);
+			s_uxuy_lookup[iy][ix] = s;
+		}
+	}
+}
 
 typedef struct EvalState
 {
@@ -32,9 +43,15 @@ static int eval_color(EvalState* st, float x, float y)
 	float fy = fract(uy);
 	fx = MIN(fx, 1.0f - fx);
 	fy = MIN(fy, 1.0f - fy);
-	float cx = ceilf(ux) - 5.5f;
-	float cy = ceilf(uy) - 5.5f;
-	float s = sqrtf(cx * cx + cy * cy);
+
+	// the calculation below is a small table, so lookup:
+	//float cx = ceilf(ux) - 5.5f;
+	//float cy = ceilf(uy) - 5.5f;
+	//float s = sqrtf(cx * cx + cy * cy);
+	int lcx = (int)ceilf(ux);
+	int lcy = (int)ceilf(uy);
+	float s = s_uxuy_lookup[lcy][lcx];
+
 	float e = 2.0f * fract((st->t - s * 0.5f) * 0.25f) - 1.0f;
 	float v = fract(4.0f * MIN(fx, fy));
 	float b = 0.95f * (e < 0.0f ? v : 1.0f - v) - e * e;
@@ -44,6 +61,12 @@ static int eval_color(EvalState* st, float x, float y)
 	float res = st->alpha < 0.5f ? e : a;
 	return MIN(255, (int)(res * 250.0f));
 }
+
+#define MAX_BARS (240)
+static int s_bar_count = 120;
+#define BAR_WIDTH (17)
+static uint8_t kBarColors[BAR_WIDTH] = { 5, 50, 96, 134, 165, 189, 206, 216, 220, 216, 206, 189, 165, 134, 96, 50, 5 };
+
 
 void fx_prettyhip_update(float start_time, float end_time, float alpha)
 {

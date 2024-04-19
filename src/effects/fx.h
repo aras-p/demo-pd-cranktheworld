@@ -4,6 +4,7 @@ void fx_blobs_init();
 void fx_plasma_init();
 void fx_raytrace_init();
 void fx_starfield_init();
+void fx_prettyhip_init();
 
 typedef void (*fx_update_function)(float start_time, float end_time, float alpha);
 

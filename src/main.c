@@ -72,6 +72,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		fx_plasma_init();
 		fx_raytrace_init();
 		fx_starfield_init();
+		fx_prettyhip_init();
 
 #if PLAY_MUSIC
 		s_music_ok = false;
