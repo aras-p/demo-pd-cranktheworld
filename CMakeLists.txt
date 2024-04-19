@@ -38,6 +38,7 @@ set (DEMO_SOURCES
 	src/main.c
 	src/mathlib.c
 	src/mathlib.h
+	src/effects/fx.c
 	src/effects/fx.h
 	src/effects/fx_blobs.c
 	src/effects/fx_plasma.c

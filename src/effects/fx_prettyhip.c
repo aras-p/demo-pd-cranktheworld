@@ -1,6 +1,7 @@
 #include "../globals.h"
 
 #include "pd_api.h"
+#include "fx.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
@@ -71,5 +72,7 @@ void fx_prettyhip_update(float start_time, float end_time, float alpha)
 			g_screen_buffer[pix_idx] = val;
 		}
 	}
-	draw_dithered_screen(G.framebuffer, G.beat ? 50 : 0);
+
+	int bias = (G.beat ? 50 : 0) + get_fade_bias(start_time, end_time);
+	draw_dithered_screen(G.framebuffer, bias);
 }

@@ -1,6 +1,7 @@
 #include "../globals.h"
 
 #include "pd_api.h"
+#include "fx.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 
@@ -73,7 +74,8 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 		s_plasma_pos4 = (int)(sinf(G.crank_angle_rad) * 431);
 	}
 
-	draw_dithered_screen(G.framebuffer, s_plasma_bias);
+	int bias = s_plasma_bias + get_fade_bias(start_time, end_time);
+	draw_dithered_screen(G.framebuffer, bias);
 }
 
 void fx_plasma_init()

@@ -31,11 +31,11 @@ typedef struct DemoImage {
 } DemoImage;
 
 static DemoImage s_images[] = {
-	{"text_everybody.pdi", 105, 8, 16, 32, false },
-	{"text_wantsto.pdi", 120, 56, 17, 32, false },
-	{"text_crank.pdi", 89, 103, 18, 32, false },
-	{"text_theworld.pdi", 136, 163, 19, 32, false },
-	{"text_instr.pdi", 5, 183, 0, 64000, true },
+	{"text_everybody.pdi",	105,   8, 16, 29, false },
+	{"text_wantsto.pdi",	120,  56, 18, 30, false },
+	{"text_crank.pdi",		 89, 103, 20, 31, false },
+	{"text_theworld.pdi",	136, 163, 22, 32, false },
+	{"text_instr.pdi",		  5, 183,  0, 64000, true },
 };
 #define DEMO_IMAGE_COUNT (sizeof(s_images)/sizeof(s_images[0]))
 

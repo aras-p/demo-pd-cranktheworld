@@ -12,7 +12,7 @@ typedef struct Star {
 
 #define STARS_START (100)
 #define STARS_MID (3000)
-#define STARS_END (20000) // 20k is still 30fps
+#define STARS_END (10000)
 
 static Star s_stars[STARS_END];
 

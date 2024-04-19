@@ -1,6 +1,7 @@
 #include "../globals.h"
 
 #include "pd_api.h"
+#include "fx.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 #include "../external/aheasing/easing.h"
@@ -275,7 +276,7 @@ static int CompareSphereDist(const void* a, const void* b)
 	return 0;
 }
 
-static void do_render(float crank_angle, float time, float alpha, uint8_t* framebuffer, int framebuffer_stride)
+static void do_render(float crank_angle, float time, float start_time, float end_time, float alpha, uint8_t* framebuffer, int framebuffer_stride)
 {
 	float cangle = crank_angle + ((68 + time * 6.0f) * (G.ending ? 0.2f : 1.0f)) * (M_PIf / 180.0f);
 	float cs = cosf(cangle);
@@ -360,14 +361,12 @@ static void do_render(float crank_angle, float time, float alpha, uint8_t* frame
 			g_screen_buffer[pix_idx] = val;
 		}
 	}
-	int bias = (int)lerp(-250.0f, 0.0f, time);
-	bias = MIN(0, bias);
-	draw_dithered_screen(framebuffer, bias);
+	draw_dithered_screen(framebuffer, get_fade_bias(start_time, end_time));
 }
 
 void fx_raytrace_update(float start_time, float end_time, float alpha)
 {
-	do_render(G.crank_angle_rad, G.ending ? G.time : G.time - start_time, alpha, G.framebuffer, G.framebuffer_stride);
+	do_render(G.crank_angle_rad, G.ending ? G.time : G.time - start_time, start_time, end_time, alpha, G.framebuffer, G.framebuffer_stride);
 }
 
 void fx_raytrace_init()
