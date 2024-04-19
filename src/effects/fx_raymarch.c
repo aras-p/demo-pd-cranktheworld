@@ -43,10 +43,11 @@ static int trace_xor_towers(TraceState* st, float x, float y)
 
 	int mask = st->xor_mask;
 
+#define MINSTEP 5
 #define MAXSTEP 35
-	float height = 0.0f;
-	int it = 0;
+	int it = MINSTEP;
 	float heightstep = 0.3f;
+	float height = MINSTEP * heightstep;
 	for (; it < MAXSTEP; ++it)
 	{
 		int tst = bx ^ by ^ bz;
@@ -59,13 +60,13 @@ static int trace_xor_towers(TraceState* st, float x, float y)
 		height += heightstep;
 		heightstep += 0.07f;
 	}
-	//return (int)(height * (255.0f / 70.0f));
-
-	int res = (it - 14) * 12;
+	height = (height - 3) / 40.0f;
+	height *= height;
+	int res = (int)(height * 255.0f);
 	//res += G.beat ? 50 : 0;
 	res = MAX(0, res);
 	res = MIN(255, res);
-	return res;
+	return 255-res;
 #undef MAXSTEP
 }
 
@@ -92,7 +93,7 @@ static int trace_sphere_field(TraceState* st, float x, float y)
 			break;
 		pos = v3_add(pos, v3_mulfl(dir, d * 1.5f));
 	}
-	return (int)(it * (255.0f / MAXSTEP));
+	return 255 - (int)(it * (255.0f / MAXSTEP));
 
 #undef MAXSTEP
 }
@@ -115,7 +116,7 @@ static int trace_octa_field(TraceState* st, float x, float y)
 			break;
 		pos = v3_add(pos, v3_mulfl(dir, d * 1.5f));
 	}
-	return (int)(it * (255.0f / MAXSTEP));
+	return 255 - (int)(it * (255.0f / MAXSTEP));
 
 #undef MAXSTEP
 }
@@ -161,6 +162,8 @@ static int trace_sponge(TraceState* st, float x, float y)
 	ny = st->rotmx * dir.x - st->rotmy * dir.z;
 	dir.x = nx;
 	dir.z = ny;
+
+	pos = v3_add(pos, v3_mulfl(dir, 0.5f));
 
 	float t = 0.0f;
 	int i;
@@ -210,7 +213,7 @@ static int trace_puls(TraceState* st, float x, float y)
 	dir = (float3){ dir.y, dir.z * st->puls_cosa - dir.x * st->puls_sina, dir.x * st->puls_cosa + dir.z * st->puls_sina };
 	dir = (float3){ dir.y, dir.z * st->puls_cosa - dir.x * st->puls_sina, dir.x * st->puls_cosa + dir.z * st->puls_sina };
 
-	float t = 0.0f;
+	float t = 0.4f;
 	int i;
 	for (i = 0; i < PULS_MAX_TRACE_STEPS; ++i)
 	{
@@ -222,7 +225,9 @@ static int trace_puls(TraceState* st, float x, float y)
 	}
 
 	//return (int)(((float)j) / (float)MAXSTEP * 255.0f);
-	int res = (int)((t - 0.4f) * (255.0f * 0.25f));
+	float v = 1.0f - (t - 0.5f) * 0.25f;
+	v *= v;
+	int res = (int)(v * 255.0f);
 	res = MIN(255, res);
 	res = MAX(0, res);
 	return res;
@@ -250,6 +255,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 	int bar_idx = (((int)G.time) / 4) & 3;
 	int xor_masks[4] = {63, 61, 59, 63};
 	st.xor_mask = xor_masks[bar_idx];
+	st.xor_mask = 63;
 
 	st.sph_camx = cosf(st.t * 0.3f + 1.66f);
 	st.sph_camy = cosf(st.t * 0.23f + 1.0f);
@@ -360,7 +366,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 				g_screen_buffer_2x2sml[pix_idx] = val;
 			}
 		}
-		else if (section_idx == 6) // top: sponge, sphere field, bottom: octa field, puls
+		else if (section_idx == 6) // top: sponge, sphere field, bottom: xor, puls
 		{
 			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
@@ -375,7 +381,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 				else
 				{
 					if (px < transition_x)
-						val = trace_octa_field(&st, x, y);
+						val = trace_xor_towers(&st, x, y);
 					else
 						val = trace_puls(&st, x, y);
 				}
@@ -398,7 +404,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 				else if (quad_index == 1)
 					val = trace_sphere_field(&st, x, y);
 				else if (quad_index == 2)
-					val = trace_octa_field(&st, x, y);
+					val = trace_xor_towers(&st, x, y);
 				else
 					val = trace_sponge(&st, x, y);
 				g_screen_buffer_2x2sml[pix_idx] = val;
