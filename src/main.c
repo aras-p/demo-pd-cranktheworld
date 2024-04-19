@@ -126,6 +126,7 @@ static int track_current_time()
 		{
 			G.ending = true;
 			G.pd->system->resetElapsedTime();
+			G.time = G.prev_time = 0.0f;
 		}
 	}
 #endif
