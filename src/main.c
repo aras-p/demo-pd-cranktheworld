@@ -36,6 +36,7 @@ static DemoImage s_images[] = {
 	{"text_crank.pdi",		 89, 103, 20, 31, false },
 	{"text_theworld.pdi",	136, 163, 22, 32, false },
 	{"text_instr.pdi",		  5, 183,  0, 64000, true },
+	{"text_logo.pdi",		365, 210,  0, 64000, true },
 };
 #define DEMO_IMAGE_COUNT (sizeof(s_images)/sizeof(s_images[0]))
 
