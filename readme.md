@@ -35,6 +35,7 @@ track is just a GarageBand experiment that my kid did several years ago.
 
 Some of the scenes/effects are ~~ripped off~~ *inspired* by other shadertoys or demos:
 - [twisty cuby](https://www.shadertoy.com/view/MtdyWj) by DJDoomz
+- [Ring Twister](https://www.shadertoy.com/view/Xt23z3) by Flyguy
 - [Pretty Hip](https://www.shadertoy.com/view/XsBfRW) by Fabrice Neyret
 - [Xor Towers](https://www.shadertoy.com/view/7lsXR2) by Greg Rostami
 - [Menger Sponge Variation](https://www.shadertoy.com/view/ldyGWm) by Shane

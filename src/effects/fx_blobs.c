@@ -23,6 +23,37 @@ static void blob_init(Blob* b)
 	b->speed = (RandomFloat01(&G.rng) * 2.0f - 1.0f);
 }
 
+// Very simplified "Ring Twister" by Flyguy https://www.shadertoy.com/view/Xt23z3
+
+typedef struct EvalState
+{
+	float t;
+	float sint;
+} EvalState;
+
+static int eval_ring_twister(const EvalState* st, float x, float y)
+{
+	float rad = (x * x + y * y) * 4.0f - 1.8f;
+	if (fabsf(rad) > 1.0f)
+		return 0;
+	float r = rad;
+	float a = atan2f(y, x) - st->t * 0.6f;
+
+	float b1 = fract((a + st->t + sinf(a) * st->sint) * (2.0f/M_PIf)) * (M_PIf * 0.5f) - 2.0f;
+	float b2 = b1 + (r > cosf(b1) ? 1.6f : 0.0f);
+
+	float t2 = sinf(b2);
+	r -= t2;
+	if (r < 0.0f)
+		return 0;
+
+	float b3 = cosf(b2) - t2;
+	if (r > b3)
+		return 0;
+
+	return (int)((0.7f * b3 - 0.5f * r) * 255.0f);
+}
+
 void fx_blobs_update(float start_time, float end_time, float alpha)
 {
 	if (G.buttons_pressed & kButtonLeft)
@@ -53,18 +84,31 @@ void fx_blobs_update(float start_time, float end_time, float alpha)
 	}
 
 	float scale = 1.0f / (1.0f * powf(10.0f, (float)(3 + s_blob_count * 3)));
+
+	EvalState st;
+	float t = G.time * 0.5f;
+	st.t = t;
+	st.sint = sinf(t) * M_PIf;
+
+	float xsize = 3.333f;
+	float ysize = 2.0f;
+	float dx = xsize / LCD_COLUMNS;
+	float dy = ysize / LCD_ROWS;
 	
 	int t_frame_index = G.frame_count & 3;
-	for (int py = 0; py < LCD_ROWS; ++py)
+	float y = ysize / 2 - dy;
+	for (int py = 0; py < LCD_ROWS; ++py, y -= dy)
 	{
 		int t_row_index = py & 1;
 		int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
 		if (col_offset < 0)
 			continue; // this row does not evaluate any pixels
 
+		float x = -xsize / 2 + dx * 0.5f;
 		int pix_idx = py * LCD_COLUMNS;
+		x += dx * col_offset;
 		pix_idx += col_offset;
-		for (int px = col_offset; px < LCD_COLUMNS; px += 2, pix_idx += 2)
+		for (int px = col_offset; px < LCD_COLUMNS; px += 2, x += dx * 2, pix_idx += 2)
 		{
 			float dist = 1.0f;
 			for (int i = 0; i < s_blob_count; ++i) {
@@ -75,6 +119,11 @@ void fx_blobs_update(float start_time, float end_time, float alpha)
 			}
 			int val = (int)(280 - dist * scale);
 			val = MAX(-250, val);
+
+			int val_ring = eval_ring_twister(&st, x, y);
+			if (val_ring > 0)
+				val = val_ring;
+
 			g_screen_buffer[pix_idx] = val;
 		}
 	}
