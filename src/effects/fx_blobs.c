@@ -37,7 +37,7 @@ static int eval_ring_twister(const EvalState* st, float x, float y)
 	if (fabsf(rad) > 1.0f)
 		return 0;
 	float r = rad;
-	float a = atan2f(y, x) - st->t * 0.6f;
+	float a = atan2f_approx(y, x) - st->t * 0.6f;
 
 	float b1 = fract((a + st->t + sinf(a) * st->sint) * (2.0f/M_PIf)) * (M_PIf * 0.5f) - 2.0f;
 	float b2 = b1 + (r > cosf(b1) ? 1.6f : 0.0f);

@@ -50,6 +50,16 @@ static inline float fract(float v)
 	return v - floorf(v);
 }
 
+// https://gist.github.com/volkansalma/2972237?permalink_comment_id=3872525#gistcomment-3872525
+static inline float atan2f_approx(float y, float x)
+{
+	float absy = fabsf(y) + 1.0e-8f; // avoid 0/0
+	float r = (x - copysignf(absy, x)) / (absy + fabsf(x));
+	float a = M_PIf * 0.5f - copysignf(M_PIf * 0.25f, x);
+	a += (0.1963f * r * r - 0.9817f) * r;
+	return copysignf(a, y);
+}
+
 static inline float lerp(float a, float b, float t)
 {
 	return a * (1.0f - t) + b * t;
