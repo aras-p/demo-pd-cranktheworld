@@ -40,7 +40,6 @@ set (DEMO_SOURCES
 	src/mathlib.h
 	src/effects/fx.c
 	src/effects/fx.h
-	src/effects/fx_blobs.c
 	src/effects/fx_plasma.c
 	src/effects/fx_prettyhip.c
 	src/effects/fx_raymarch.c

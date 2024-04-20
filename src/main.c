@@ -69,7 +69,6 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 		}
 
 		init_pixel_ops();
-		fx_blobs_init();
 		fx_plasma_init();
 		fx_raytrace_init();
 		fx_starfield_init();
@@ -151,8 +150,7 @@ typedef struct DemoEffect {
 static DemoEffect s_effects[] = {
 	{0, 32, fx_starfield_update},
 	{32, 64, fx_prettyhip_update},
-	{64, 80, fx_plasma_update},
-	{80, 96, fx_blobs_update},
+	{64, 96, fx_plasma_update},
 	{96, 240, fx_raymarch_update},
 	{240, 304, fx_raytrace_update},
 };
@@ -161,8 +159,8 @@ static DemoEffect s_effects[] = {
 static DemoEffect s_ending_effects[] = {
 	{0, 32, fx_starfield_update, 0.5f},
 	{32, 64, fx_prettyhip_update, 0.5f},
-	{64, 80, fx_plasma_update, 0.5f},
-	{80, 96, fx_blobs_update, 0.5f},
+	{64, 80, fx_plasma_update, 0.4f}, // w/ twisty cube
+	{80, 96, fx_plasma_update, 0.6f}, // w/ twisted ring
 	{96, 240, fx_raymarch_update, 0.2f}, // xor towers
 	{96, 240, fx_raymarch_update, 0.3f}, // sponge
 	{96, 240, fx_raymarch_update, 0.4f}, // puls

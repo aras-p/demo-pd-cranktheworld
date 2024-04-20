@@ -26,17 +26,21 @@ static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
 static int s_plasma_bias = 0;
 
+
 // raymarching a very simplified version of "twisty cuby" by DJDoomz
 // https://www.shadertoy.com/view/MtdyWj
 
-typedef struct TraceState
+typedef struct EvalState
 {
 	float rotm_tx, rotm_ty;
 	float rotm_tx6, rotm_ty6;
 	float3 pos;
-} TraceState;
 
-static float sdf_twisty_cuby(const TraceState* st, float3 p)
+	float t;
+	float sint;
+} EvalState;
+
+static float sdf_twisty_cuby(const EvalState* st, float3 p)
 {
 	p.z -= 6.0f;
 
@@ -52,7 +56,7 @@ static float sdf_twisty_cuby(const TraceState* st, float3 p)
 	return d - 2.7f;
 }
 
-static int trace_twisty_cuby(TraceState* st, float x, float y)
+static int trace_twisty_cuby(EvalState* st, float x, float y)
 {
 	float3 pos = st->pos;
 	float3 dir = { x, y, 0.8f }; // do not normalize on purpose lol
@@ -70,16 +74,46 @@ static int trace_twisty_cuby(TraceState* st, float x, float y)
 }
 
 
+// Very simplified "Ring Twister" by Flyguy https://www.shadertoy.com/view/Xt23z3
+
+static int eval_ring_twister(const EvalState* st, float x, float y)
+{
+	float rad = (x * x + y * y) * 4.0f - 1.8f;
+	if (fabsf(rad) > 1.0f)
+		return 0;
+	float r = rad;
+	float a = atan2f_approx(y, x) - st->t * 0.6f;
+
+	float b1 = fract((a + st->t + sinf(a) * st->sint) * (2.0f / M_PIf)) * (M_PIf * 0.5f) - 2.0f;
+	float b2 = b1 + (r > cosf(b1) ? 1.6f : 0.0f);
+
+	float t2 = sinf(b2);
+	r -= t2;
+	if (r < 0.0f)
+		return 0;
+
+	float b3 = cosf(b2) - t2;
+	if (r > b3)
+		return 0;
+
+	return (int)((0.7f * b3 - 0.5f * r) * 255.0f);
+}
+
+
 void fx_plasma_update(float start_time, float end_time, float alpha)
 {
 	int tpos4 = s_plasma_pos4;
 	int tpos3 = s_plasma_pos3;
 
-	TraceState st;
+	EvalState st;
 	float t = G.time * 0.5f;
+	float sint = sinf(t);
 	st.pos.x = 0.0f;
-	st.pos.y = 0.6f * sinf(t);
+	st.pos.y = 0.6f * sint;
 	st.pos.z = 0.0f;
+	st.t = t;
+	st.sint = sint * M_PIf;
+	bool twisty_cube = alpha < 0.5f;
 
 	float xsize = 3.333f;
 	float ysize = 2.0f;
@@ -104,9 +138,12 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 		x += dx * col_offset;
 		pix_idx += col_offset;
 
-		float tt = t + 0.2f * sinf(y * 1.5f + t);
-		st.rotm_tx = cosf(tt); st.rotm_ty = sinf(tt);
-		st.rotm_tx6 = cosf(tt * 0.6f); st.rotm_ty6 = sinf(tt * 0.6f);
+		if (twisty_cube)
+		{
+			float tt = t + 0.2f * sinf(y * 1.5f + t);
+			st.rotm_tx = cosf(tt); st.rotm_ty = sinf(tt);
+			st.rotm_tx6 = cosf(tt * 0.6f); st.rotm_ty6 = sinf(tt * 0.6f);
+		}
 
 		for (int px = col_offset; px < LCD_COLUMNS; px += 2, x += dx * 2, pix_idx += 2)
 		{
@@ -119,11 +156,20 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 
 			int val = plasma >> 3;
 
-			if (fabsf(x) < 1.0f)
+			if (twisty_cube)
 			{
-				int cube_val = trace_twisty_cuby(&st, x, y);
-				if (cube_val > 0)
-					val = cube_val;
+				if (fabsf(x) < 1.0f)
+				{
+					int cube_val = trace_twisty_cuby(&st, x, y);
+					if (cube_val > 0)
+						val = cube_val;
+				}
+			}
+			else
+			{
+				int ring_val = eval_ring_twister(&st, x, y);
+				if (ring_val > 0)
+					val = ring_val;
 			}
 			g_screen_buffer[pix_idx] = val;
 		}
