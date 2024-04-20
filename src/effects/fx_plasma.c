@@ -39,7 +39,6 @@ static uint16_t s_plasma_pos1;
 static uint16_t s_plasma_pos2;
 static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
-static int s_plasma_bias = 0;
 
 
 // raymarching a very simplified version of "twisty cuby" by DJDoomz
@@ -78,14 +77,16 @@ static int trace_twisty_cuby(EvalState* st, float x, float y)
 	pos = v3_add(pos, v3_mulfl(dir, 4.0f));
 
 	float d;
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 2; ++i)
 	{
 		d = sdf_twisty_cuby(st, pos);
 		pos = v3_add(pos, v3_mulfl(dir, d * 2.5f));
 	}
+	if (d > 1.0f)
+		return -1;
 
-	float val = saturate(d * 4.0f);
-	return 255 - (int)(val * 255.0f);
+	float val = saturate(fabsf(d-0.7f));
+	return (int)(val * 255.0f);
 }
 
 
@@ -93,9 +94,9 @@ static int trace_twisty_cuby(EvalState* st, float x, float y)
 
 static int eval_ring_twister(const EvalState* st, float x, float y)
 {
-	float rad = (x * x + y * y) * 4.0f - 1.8f;
+	float rad = (x * x + y * y) * 2.4f - 1.3f;
 	if (fabsf(rad) > 1.0f)
-		return 0;
+		return -1;
 	float r = rad;
 	float a = atan2f_approx(y, x) - st->t * 0.6f;
 
@@ -105,13 +106,15 @@ static int eval_ring_twister(const EvalState* st, float x, float y)
 	float t2 = sinf_tbl(b2);
 	r -= t2;
 	if (r < 0.0f)
-		return 0;
+		return -1;
 
 	float b3 = cosf_tbl(b2) - t2;
 	if (r > b3)
-		return 0;
+		return -1;
 
-	return (int)((0.7f * b3 - 0.5f * r) * 255.0f);
+	float val = saturate(0.6f * b3 - 0.4f * r);
+	val *= val;
+	return (int)(val * 255.0f);
 }
 
 
@@ -122,7 +125,7 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 
 	EvalState st;
 	float t = G.time * 0.5f;
-	float sint = sinf(t);
+	float sint = sinf(t + G.crank_angle_rad);
 	st.pos.x = 0.0f;
 	st.pos.y = 0.6f * sint;
 	st.pos.z = 0.0f;
@@ -169,21 +172,21 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 
 			int plasma = s_sin_table[tpos1] + s_sin_table[tpos2] + s_sin_table[tpos3] + s_sin_table[tpos4];
 
-			int val = plasma >> 3;
+			int val = 128 + ((plasma >> 4) & 127);
 
 			if (twisty_cube)
 			{
 				if (fabsf(x) < 1.0f)
 				{
 					int cube_val = trace_twisty_cuby(&st, x, y);
-					if (cube_val > 0)
+					if (cube_val >= 0)
 						val = cube_val;
 				}
 			}
 			else
 			{
 				int ring_val = eval_ring_twister(&st, x, y);
-				if (ring_val > 0)
+				if (ring_val >= 0)
 					val = ring_val;
 			}
 			g_screen_buffer[pix_idx] = val;
@@ -193,19 +196,13 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 	s_plasma_pos1 += 7;
 	s_plasma_pos3 += 3;
 
-	if (G.beat)
-	{
-		int r = XorShift32(&G.rng);
-		s_plasma_bias = (r & 128) - 63;
-	}
 	if (G.ending)
 	{
-		s_plasma_bias = 0;
 		s_plasma_pos2 = (int)(sinf(G.crank_angle_rad) * 764);
 		s_plasma_pos4 = (int)(sinf(G.crank_angle_rad) * 431);
 	}
 
-	int bias = s_plasma_bias + get_fade_bias(start_time, end_time);
+	int bias = (G.beat ? 50 : 0) + get_fade_bias(start_time, end_time);
 	draw_dithered_screen(G.framebuffer, bias);
 }
 
