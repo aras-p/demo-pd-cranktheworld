@@ -9,6 +9,7 @@
 #define TRIG_TABLE_MASK (TRIG_TABLE_SIZE-1)
 #define TRIG_TABLE_SCALE 1024
 static int s_sin_table[TRIG_TABLE_SIZE];
+static float s_sin_table_f[TRIG_TABLE_SIZE];
 
 static void init_sin_table()
 {
@@ -16,8 +17,22 @@ static void init_sin_table()
 	for (int i = 0; i < TRIG_TABLE_SIZE; ++i)
 	{
 		float rad = i * idx_to_rad;
-		s_sin_table[i] = (int)(sinf(rad) * TRIG_TABLE_SCALE);
+		float v = sinf(rad);
+		s_sin_table_f[i] = v;
+		s_sin_table[i] = (int)(v * TRIG_TABLE_SCALE);
 	}
+}
+
+static float sinf_tbl(float x)
+{
+	x *= TRIG_TABLE_SIZE / (2.0f * M_PIf);
+	int idx = ((int)x) & TRIG_TABLE_MASK;
+	return s_sin_table_f[idx];
+}
+
+static float cosf_tbl(float x)
+{
+	return sinf_tbl(x + M_PIf*0.5f);
 }
 
 static uint16_t s_plasma_pos1;
@@ -84,15 +99,15 @@ static int eval_ring_twister(const EvalState* st, float x, float y)
 	float r = rad;
 	float a = atan2f_approx(y, x) - st->t * 0.6f;
 
-	float b1 = fract((a + st->t + sinf(a) * st->sint) * (2.0f / M_PIf)) * (M_PIf * 0.5f) - 2.0f;
-	float b2 = b1 + (r > cosf(b1) ? 1.6f : 0.0f);
+	float b1 = fract((a + st->t + sinf_tbl(a) * st->sint) * (2.0f / M_PIf)) * (M_PIf * 0.5f) - 2.0f;
+	float b2 = b1 + (r > cosf_tbl(b1) ? 1.6f : 0.0f);
 
-	float t2 = sinf(b2);
+	float t2 = sinf_tbl(b2);
 	r -= t2;
 	if (r < 0.0f)
 		return 0;
 
-	float b3 = cosf(b2) - t2;
+	float b3 = cosf_tbl(b2) - t2;
 	if (r > b3)
 		return 0;
 
