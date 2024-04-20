@@ -21,9 +21,17 @@ A real-time rendering demo for [Playdate](https://play.date/).
 I wanted to code some oldskool demo effects that I never did back when 30 years ago everyone else was doing them.
 You know: plasma, kefren bars, blobs, starfield. And so I did!
 
-Also wanted to check out how much of shadertoy-like raymarching could a Playdate do. Turns out, not "a lot", lol.
+Also wanted to check out how much of shadertoy-like raymarching could a Playdate do. Turns out, not "a lot", lol
+(Playdate hardware is a single-core ARM Cortex-M7F CPU at 180MHz, and no special graphics hardware at all).
 That is why the raymarched / raytraced scenes run at like "temporal" update pattern that updates only every 4th or
 6th or 8th etc. pixel every frame. Majority of the demo runs at 30FPS, with some parts dropping to about 24FPS.
+
+The 1-bit/pixel screen is interesting too, to tackle that I went the easy way and did a screen-space blue noise
+based dithering.
+
+The whole demo is pretty small, except the music track takes a whopping 3MB, because it is just an ADPCM WAV file.
+The CPU cost of doing something like MP3 playback was too high, and I did not go the MIDI/MOD/XM route since the music
+track is just a GarageBand experiment that my kid did several years ago.
 
 Some of the scenes/effects are ~~ripped off~~ *inspired* by other shadertoys or demos:
 - [twisty cuby](https://www.shadertoy.com/view/MtdyWj) by DJDoomz
