@@ -19,7 +19,7 @@ A real-time rendering demo for [Playdate](https://play.date/).
 ### Details
 
 I wanted to code some oldskool demo effects that I never did back when 30 years ago everyone else was doing them.
-And so I did!
+You know: plasma, kefren bars, blobs, starfield. And so I did!
 
 Also wanted to check out how much of shadertoy-like raymarching could a Playdate do. Turns out, not "a lot", lol.
 That is why the raymarched / raytraced scenes run at like "temporal" update pattern that updates only every 4th or
