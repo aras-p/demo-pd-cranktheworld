@@ -26,37 +26,107 @@ static uint16_t s_plasma_pos3;
 static uint16_t s_plasma_pos4;
 static int s_plasma_bias = 0;
 
+// raymarching a very simplified version of "twisty cuby" by DJDoomz
+// https://www.shadertoy.com/view/MtdyWj
+
+typedef struct TraceState
+{
+	float rotm_tx, rotm_ty;
+	float rotm_tx6, rotm_ty6;
+	float3 pos;
+} TraceState;
+
+static float sdf_twisty_cuby(const TraceState* st, float3 p)
+{
+	p.z -= 6.0f;
+
+	float n1 = st->rotm_ty * p.x + st->rotm_tx * p.z;
+	float n2 = st->rotm_tx * p.x - st->rotm_ty * p.z;
+	p.x = n1; p.z = n2;
+	n1 = st->rotm_ty6 * p.y + st->rotm_tx6 * p.x;
+	n2 = st->rotm_tx6 * p.y - st->rotm_ty6 * p.x;
+	p.y = n1; p.x = n2;
+
+	p = v3_abs(p);
+	float d = MAX(p.x, MAX(p.y, p.z));
+	return d - 2.7f;
+}
+
+static int trace_twisty_cuby(TraceState* st, float x, float y)
+{
+	float3 pos = st->pos;
+	float3 dir = { x, y, 0.8f }; // do not normalize on purpose lol
+	pos = v3_add(pos, v3_mulfl(dir, 4.0f));
+
+	float d;
+	for (int i = 0; i < 3; ++i)
+	{
+		d = sdf_twisty_cuby(st, pos);
+		pos = v3_add(pos, v3_mulfl(dir, d * 2.5f));
+	}
+
+	float val = saturate(d * 4.0f);
+	return 255 - (int)(val * 255.0f);
+}
+
+
 void fx_plasma_update(float start_time, float end_time, float alpha)
 {
 	int tpos4 = s_plasma_pos4;
 	int tpos3 = s_plasma_pos3;
 
-	int pix_idx = 0;
-	uint8_t* pix = g_screen_buffer;
-	for (int py = 0; py < LCD_ROWS; ++py)
-	{
-		int tpos1 = s_plasma_pos1 + 5;
-		int tpos2 = s_plasma_pos2 + 3;
+	TraceState st;
+	float t = G.time * 0.5f;
+	st.pos.x = 0.0f;
+	st.pos.y = 0.6f * sinf(t);
+	st.pos.z = 0.0f;
 
+	float xsize = 3.333f;
+	float ysize = 2.0f;
+	float dx = xsize / LCD_COLUMNS;
+	float dy = ysize / LCD_ROWS;
+
+	int t_frame_index = G.frame_count & 3;
+
+	float y = ysize / 2 - dy;
+	for (int py = 0; py < LCD_ROWS; ++py, tpos4 += 3, tpos3 += 1, y -= dy)
+	{
 		tpos3 &= TRIG_TABLE_MASK;
 		tpos4 &= TRIG_TABLE_MASK;
 
-		for (int px = 0; px < LCD_COLUMNS; ++px, ++pix_idx)
+		int t_row_index = py & 1;
+		int col_offset = g_order_pattern_2x2[t_frame_index][t_row_index] - 1;
+		if (col_offset < 0)
+			continue; // this row does not evaluate any pixels
+
+		float x = -xsize / 2 + dx * 0.5f;
+		int pix_idx = py * LCD_COLUMNS;
+		x += dx * col_offset;
+		pix_idx += col_offset;
+
+		float tt = t + 0.2f * sinf(y * 1.5f + t);
+		st.rotm_tx = cosf(tt); st.rotm_ty = sinf(tt);
+		st.rotm_tx6 = cosf(tt * 0.6f); st.rotm_ty6 = sinf(tt * 0.6f);
+
+		for (int px = col_offset; px < LCD_COLUMNS; px += 2, x += dx * 2, pix_idx += 2)
 		{
+			int tpos1 = s_plasma_pos1 + 5 + px * 5;
+			int tpos2 = s_plasma_pos2 + 3 + px * 3;
 			tpos1 &= TRIG_TABLE_MASK;
 			tpos2 &= TRIG_TABLE_MASK;
 
 			int plasma = s_sin_table[tpos1] + s_sin_table[tpos2] + s_sin_table[tpos3] + s_sin_table[tpos4];
 
 			int val = plasma >> 3;
-			*pix++ = val;
 
-			tpos1 += 5;
-			tpos2 += 3;
+			if (fabsf(x) < 1.0f)
+			{
+				int cube_val = trace_twisty_cuby(&st, x, y);
+				if (cube_val > 0)
+					val = cube_val;
+			}
+			g_screen_buffer[pix_idx] = val;
 		}
-
-		tpos4 += 3;
-		tpos3 += 1;
 	}
 
 	s_plasma_pos1 += 7;
@@ -65,7 +135,7 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 	if (G.beat)
 	{
 		int r = XorShift32(&G.rng);
-		s_plasma_bias = (r & 255) - 128;
+		s_plasma_bias = (r & 128) - 63;
 	}
 	if (G.ending)
 	{
