@@ -5,6 +5,7 @@ A real-time rendering demo for [Playdate](https://play.date/).
 * **Video**: device playing it ([youtube](https://www.youtube.com/watch?v=QjAKiwQxrQI) / [mp4 file](https://aras-p.info/files/demos/2024/Nesnausk_CrankTheWorld_20240421.mp4)), just the screen ([youtube](https://www.youtube.com/watch?v=3NjHOVtTPjY) / [mp4 file](https://aras-p.info/files/demos/2024/Nesnausk_CrankTheWorld_screen20240421.mp4))
 * **Playdate build**: [Nesnausk_CrankTheWorld.pdx.zip](https://aras-p.info/files/demos/2024/Nesnausk_CrankTheWorld-20240421.zip) (3MB), should also work in Playdate Simulator on Windows.
 * **pouët**: https://www.pouet.net/prod.php?which=96955
+* Took 4th place at [Outline 2024](https://outlinedemoparty.nl/) "Newskool Demo" category
 
 ![Screenshot](/log/playdate-20240419-140918.png?raw=true "Screenshot")
 ![Screenshot](/log/playdate-20240419-140936.png?raw=true "Screenshot")
