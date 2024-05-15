@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Unlicense
+
 #include "pixel_ops.h"
 #include "image_loader.h"
 

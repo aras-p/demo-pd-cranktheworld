@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Unlicense
+
 #include "pd_api.h"
 
 #include "allocator.h"

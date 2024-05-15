@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Unlicense
+
 #pragma once
 
 void fx_plasma_init();

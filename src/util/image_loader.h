@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Unlicense
+
 #pragma once
 
 #include <stdint.h>

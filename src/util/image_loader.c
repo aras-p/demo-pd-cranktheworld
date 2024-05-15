@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Unlicense
+
 #include "image_loader.h"
 
 #include "../allocator.h"

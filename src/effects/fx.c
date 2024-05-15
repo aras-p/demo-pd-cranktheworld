@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Unlicense
+
 #include "fx.h"
 #include "../globals.h"
 #include "../mathlib.h"
