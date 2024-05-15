@@ -113,8 +113,6 @@ static inline float v3_dot(float3 a, float3 b)
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-float3 v3_tri_normal(const float3* p1, const float3* p2, const float3* p3);
-
 static inline float3 v3_normalize(float3 v)
 {
 	float d = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -177,21 +175,3 @@ static inline float3 v3_reflect(float3 v, float3 n)
 {
 	return v3_sub(v, v3_mulfl(n, 2 * v3_dot(v, n)));
 }
-
-typedef struct xform
-{
-	float m[3][3];
-	float x;
-	float y;
-	float z;
-} xform;
-
-extern xform mtx_identity;
-
-xform mtx_make(float m11, float m12, float m13, float m21, float m22, float m23, float m31, float m32, float m33);
-xform mtx_make_translate(float dx, float dy, float dz);
-xform mtx_make_axis_angle(float angle, float3 axis);
-xform mtx_multiply(const xform* l, const xform* r);
-float3 mtx_transform_pt(const xform *m, float3 p);
-
-float mtx_get_determinant(xform* m);

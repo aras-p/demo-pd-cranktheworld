@@ -36,7 +36,6 @@ set (DEMO_SOURCES
 	src/globals.c
 	src/globals.h
 	src/main.c
-	src/mathlib.c
 	src/mathlib.h
 	src/effects/fx.c
 	src/effects/fx.h
