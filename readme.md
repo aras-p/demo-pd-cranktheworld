@@ -45,3 +45,5 @@ Some of the scenes/effects are ~~ripped off~~ *inspired* by other shadertoys or 
 When the music finishes, the demo switches to "interactive mode" where you can switch between the effects/scenes with
 Playdate A/B buttons. You can also use the crank to orbit/rotate the camera or change some other scene parameter.
 Actually, you can use the crank to control the camera during the regular demo playback as well.
+
+Blog post with some more details about development: https://aras-p.info/blog/2024/05/20/Crank-the-World-Playdate-demo/
