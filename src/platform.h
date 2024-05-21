@@ -56,11 +56,6 @@ float plat_input_get_crank_angle_rad();
 
 void plat_sys_log_error(const char* fmt, ...);
 
-extern void* (*plat_realloc)(void* ptr, size_t size);
-
-#define plat_malloc(s) plat_realloc(NULL, (s))
-
-static inline void plat_free(void* ptr) {
-	if (ptr != NULL)
-		plat_realloc(ptr, 0);
-}
+void* plat_malloc(size_t size);
+void* plat_realloc(void* ptr, size_t size);
+void plat_free(void* ptr);
