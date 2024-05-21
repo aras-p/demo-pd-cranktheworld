@@ -3,6 +3,9 @@
 #include "platform.h"
 #include <stdarg.h>
 
+void app_initialize();
+void app_update();
+
 // --------------------------------------------------------------------------
 #if defined(BUILD_PLATFORM_PLAYDATE)
 
@@ -141,9 +144,6 @@ float plat_input_get_crank_angle_rad()
 	return s_pd->system->getCrankAngle() * (3.14159265358979323846f / 180.0f);
 }
 
-void app_initialize();
-void app_update();
-
 static int eventUpdate(void* userdata)
 {
 	app_update();
@@ -180,6 +180,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #define SOKOL_D3D11
 #include "external/sokol/sokol_app.h"
 #include "external/sokol/sokol_gfx.h"
+#include "external/sokol/sokol_log.h"
 #include "external/sokol/sokol_time.h"
 #include "external/sokol/sokol_audio.h"
 #include "external/sokol/sokol_glue.h"
@@ -205,7 +206,7 @@ void plat_free(void* ptr)
 
 void plat_gfx_clear(SolidColor color)
 {
-	//@TODO
+	memset(s_screen_buffer, color == kSolidColorBlack ? 0x0 : 0xFF, sizeof(s_screen_buffer));
 }
 uint8_t* plat_gfx_get_frame()
 {
@@ -221,6 +222,7 @@ void plat_gfx_draw_stats(float par1)
 
 PlatBitmap* plat_gfx_load_bitmap(const char* file_path, const char** outerr)
 {
+	*outerr = "Bitmap loading not implemented yet";
 	//@TODO
 	return NULL;
 }
@@ -249,7 +251,9 @@ void plat_file_close(PlatFile* file)
 
 static void plat_sys_log_error_impl(const char* fmt, va_list args)
 {
-	//@TODO
+	char buf[1000];
+	vsnprintf_s(buf, sizeof(buf), sizeof(buf)-1, fmt, args);
+	slog_func("demo", 1, 0, buf, 0, "", NULL);
 }
 
 void plat_sys_log_error(const char* fmt, ...)
@@ -283,15 +287,16 @@ void plat_audio_set_time(PlatFileMusicPlayer* music, float t)
 	//@TODO
 }
 
+static uint64_t sok_start_time;
+
 float plat_time_get()
 {
-	//@TODO
-	return 0.5f;
+	return (float)stm_sec(stm_since(sok_start_time));
 }
 
 void plat_time_reset()
 {
-	//@TODO
+	sok_start_time = stm_now();
 }
 
 void plat_input_get_buttons(PlatButtons* current, PlatButtons* pushed, PlatButtons* released)
@@ -310,21 +315,107 @@ float plat_input_get_crank_angle_rad()
 
 // sokol_app setup
 
+static const char* kSokolVertexSource =
+"struct v2f {\n"
+"  float2 uv : TEXCOORD0;\n"
+"  float4 pos : SV_Position;\n"
+"};\n"
+"v2f main(uint vidx: SV_VertexID) {\n"
+"  v2f o;\n"
+"  float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
+"  o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
+"  o.uv = uv;\n"
+"  return o;\n"
+"}\n";
+static const char* kSokolFragSource =
+"Texture2D<float4> tex : register(t0);\n"
+"float4 main(float2 uv : TEXCOORD0) : SV_Target0 {\n"
+"  int x = int(uv.x * 400);\n"
+"  int y = int(uv.y * 240);\n"
+"  uint val = uint(tex.Load(int3(x>>3, y, 0)).r * 255.5);\n"
+"  uint mask = 1 << (7 - (x & 7));\n"
+"  float4 col = val & mask ? 0.9 : 0.1;\n"
+"  return col;\n"
+"}\n";
+
+static sg_pass_action sok_pass;
+static sg_shader sok_shader;
+static sg_pipeline sok_pipe;
+static sg_image sok_image;
+static sg_sampler sok_sampler;
+
 static void sapp_init(void)
 {
 	sg_setup(&(sg_desc) {
-		.environment = sglue_environment()
+		.environment = sglue_environment(),
+		.logger.func = slog_func,
 	});
+	sok_pass = (sg_pass_action){
+		.colors[0] = {.load_action = SG_LOADACTION_CLEAR, .clear_value = {0.6f, 0.4f, 0.3f, 1.0f} }
+	};
+
+	sok_sampler = sg_make_sampler(&(sg_sampler_desc) {
+		.min_filter = SG_FILTER_LINEAR,
+		.mag_filter = SG_FILTER_LINEAR,
+	});
+
+	sok_image = sg_make_image(&(sg_image_desc) {
+		.width = SCREEN_STRIDE_BYTES,
+		.height = SCREEN_Y,
+		.pixel_format = SG_PIXELFORMAT_R8, //@TODO
+		.usage = SG_USAGE_STREAM,
+	});
+	sok_shader = sg_make_shader(&(sg_shader_desc) {
+		.vs.source = kSokolVertexSource,
+		.fs = {
+			.images[0].used = true,
+			.samplers[0].used = true,
+			.image_sampler_pairs[0] = { .used = true, .image_slot = 0, .sampler_slot = 0 },
+			.source = kSokolFragSource,
+		},
+	});
+	sok_pipe = sg_make_pipeline(&(sg_pipeline_desc) {
+		.shader = sok_shader,
+		.depth = {
+			.compare = SG_COMPAREFUNC_ALWAYS,
+			.write_enabled = false
+		},
+		.index_type = SG_INDEXTYPE_NONE,
+		.cull_mode = SG_CULLMODE_NONE,
+	});
+
+
+	stm_setup();
+	sok_start_time = stm_now();
+
+	app_initialize();
 }
 
 static void sapp_frame(void)
 {
+	app_update();
 
+	sg_update_image(sok_image, &(sg_image_data){.subimage[0][0] = SG_RANGE(s_screen_buffer)});
+
+	sg_begin_pass(&(sg_pass) { .action = sok_pass, .swapchain = sglue_swapchain() });
+
+	sg_bindings bind = {
+		.fs = {
+			.images[0] = sok_image,
+			.samplers[0] = sok_sampler,
+		},
+	};
+
+	sg_apply_pipeline(sok_pipe);
+	sg_apply_bindings(&bind);
+	sg_draw(0, 3, 1);
+	sg_end_pass();
+	sg_commit();
 }
 
 static void sapp_cleanup(void)
 {
-
+	sg_shutdown();
 }
 
 sapp_desc sokol_main(int argc, char* argv[]) {
@@ -333,10 +424,11 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 		.init_cb = sapp_init,
 		.frame_cb = sapp_frame,
 		.cleanup_cb = sapp_cleanup,
-		.width = SCREEN_X,
-		.height = SCREEN_Y,
-		.window_title = "Triangle",
-		.icon.sokol_default = true
+		.width = SCREEN_X * 2,
+		.height = SCREEN_Y * 2,
+		.window_title = "Everybody Wants to Crank the World",
+		.icon.sokol_default = true,
+		.logger.func = slog_func,
 	};
 }
 

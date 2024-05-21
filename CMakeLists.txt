@@ -74,4 +74,12 @@ if(IS_PLAYDATE_OR_SIM)
 	include(${SDK}/C_API/buildsupport/playdate_game.cmake)
 else()
 	target_compile_definitions(${PLAYDATE_GAME_NAME} PRIVATE BUILD_PLATFORM_PC _CRT_SECURE_NO_WARNINGS)
+
+	add_custom_command(
+		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/BlueNoise.tga
+		${CMAKE_CURRENT_BINARY_DIR}/BlueNoise.tga
+	)
+
 endif()
