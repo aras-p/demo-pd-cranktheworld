@@ -79,7 +79,13 @@ else()
 		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/BlueNoise.tga
-		${CMAKE_CURRENT_BINARY_DIR}/BlueNoise.tga
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_crank.png
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_everybody.png
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_instr.png
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_logo.png
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_theworld.png
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_wantsto.png
+		${CMAKE_CURRENT_BINARY_DIR}
 	)
 
 endif()

@@ -185,8 +185,17 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #include "external/sokol/sokol_audio.h"
 #include "external/sokol/sokol_glue.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include "external/stb/stb_image.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+
+typedef struct PlatBitmap {
+	int width, height;
+	uint8_t* ga;
+} PlatBitmap;
 
 static uint8_t s_screen_buffer[SCREEN_Y * SCREEN_STRIDE_BYTES];
 
@@ -222,14 +231,59 @@ void plat_gfx_draw_stats(float par1)
 
 PlatBitmap* plat_gfx_load_bitmap(const char* file_path, const char** outerr)
 {
-	*outerr = "Bitmap loading not implemented yet";
-	//@TODO
-	return NULL;
+	*outerr = "";
+
+	char path[1000];
+	size_t path_len = strlen(file_path);
+	memcpy(path, file_path, path_len + 1);
+	path[path_len - 3] = 'p';
+	path[path_len - 2] = 'n';
+	path[path_len - 1] = 'g';
+
+	PlatBitmap* res = (PlatBitmap*)plat_malloc(sizeof(PlatBitmap));
+	int comp;
+	res->ga = stbi_load(path, &res->width, &res->height, &comp, 2);
+	return res;
+}
+
+static inline void put_pixel_black(uint8_t* row, int x)
+{
+	uint8_t mask = ~(1 << (7 - (x & 7)));
+	row[x >> 3] &= mask;
+}
+
+static inline void put_pixel_white(uint8_t* row, int x)
+{
+	uint8_t mask = (1 << (7 - (x & 7)));
+	row[x >> 3] |= mask;
 }
 
 void plat_gfx_draw_bitmap(PlatBitmap* bitmap, int x, int y)
 {
-	//@TODO
+	if (bitmap == NULL)
+		return;
+	// really unoptimized, lol
+	for (int py = 0; py < bitmap->height; ++py)
+	{
+		int yy = y + py;
+		if (yy < 0 || yy >= SCREEN_Y)
+			continue;
+		const uint8_t* src = bitmap->ga + py * bitmap->width * 2;
+		uint8_t* dst = &s_screen_buffer[yy * SCREEN_STRIDE_BYTES];
+		for (int px = 0; px < bitmap->width; ++px, src += 2)
+		{
+			int xx = x + px;
+			if (xx < 0 || xx >= SCREEN_X)
+				continue;
+			if (src[1] >= 128)
+			{
+				if (src[0] >= 128)
+					put_pixel_white(dst, xx);
+				else
+					put_pixel_black(dst, xx);
+			}
+		}
+	}
 }
 
 PlatFile* plat_file_open_read(const char* file_path)
