@@ -2,9 +2,7 @@
 
 #include "image_loader.h"
 
-#include "../allocator.h"
-
-#include "pd_api.h"
+#include "../platform.h"
 
 #include <assert.h>
 
@@ -25,17 +23,16 @@ typedef struct TgaHeader
 _Static_assert(sizeof(TgaHeader) == 18, "TgaHeader should be 18 bytes");
 
 
-uint8_t* read_tga_file_grayscale(const char* path, void* pd_api, int* out_w, int* out_h)
+uint8_t* read_tga_file_grayscale(const char* path, int* out_w, int* out_h)
 {
 	*out_w = *out_h = 0;
-	PlaydateAPI* pd = (PlaydateAPI*)pd_api;
-	SDFile* file = pd->file->open(path, kFileRead);
+	PlatFile* file = plat_file_open_read(path);
 	if (!file)
 		return NULL;
 
 	uint8_t* res = NULL;
 	TgaHeader header;
-	int bytes = pd->file->read(file, &header, sizeof(header));
+	int bytes = plat_file_read(file, &header, sizeof(header));
 	if (bytes != sizeof(header))
 		goto _exit;
 
@@ -51,17 +48,17 @@ uint8_t* read_tga_file_grayscale(const char* path, void* pd_api, int* out_w, int
 	*out_h = header.height;
 
 	int image_size = header.width * header.height;
-	res = pd_malloc(image_size);
+	res = plat_malloc(image_size);
 
-	pd->file->seek(file, header.id_size, SEEK_CUR);
-	bytes = pd->file->read(file, res, image_size);
+	plat_file_seek_cur(file, header.id_size);
+	bytes = plat_file_read(file, res, image_size);
 	if (bytes != image_size) {
-		pd_free(res);
+		plat_free(res);
 		res = NULL;
 		goto _exit;
 	}
 
 _exit:
-	pd->file->close(file);
+	plat_file_close(file);
 	return res;
 }

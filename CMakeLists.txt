@@ -1,42 +1,46 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_C_STANDARD 11)
 
-set(ENVSDK $ENV{PLAYDATE_SDK_PATH})
+# Variables:
+# - BUILD_PLATFORM=PLAYDATE when building for device
+# - BUILD_PLATFORM=PLAYDATE_SIM when building for simulator
+# - BUILD_PLATFORM not set when building for native PC
 
-if (NOT ${ENVSDK} STREQUAL "")
-	# Convert path from Windows
-	file(TO_CMAKE_PATH ${ENVSDK} SDK)
+if(("${BUILD_PLATFORM}" STREQUAL "PLAYDATE") OR ("${BUILD_PLATFORM}" STREQUAL "PLAYDATE_SIM"))
+	set(IS_PLAYDATE_OR_SIM TRUE)
 else()
-	execute_process(
-			COMMAND bash -c "egrep '^\\s*SDKRoot' $HOME/.Playdate/config"
-			COMMAND head -n 1
-			COMMAND cut -c9-
-			OUTPUT_VARIABLE SDK
-			OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
+	set(IS_PLAYDATE_OR_SIM FALSE)
 endif()
 
-if (NOT EXISTS ${SDK})
-	message(FATAL_ERROR "SDK Path not found; set ENV value PLAYDATE_SDK_PATH")
-	return()
+# Figure out Playdate SDK location
+if (IS_PLAYDATE_OR_SIM)
+	set(ENVSDK $ENV{PLAYDATE_SDK_PATH})
+	if (NOT ${ENVSDK} STREQUAL "")
+		# Convert path from Windows
+		file(TO_CMAKE_PATH ${ENVSDK} SDK)
+	endif()
+	if (NOT EXISTS ${SDK})
+		message(FATAL_ERROR "SDK Path not found; set ENV value PLAYDATE_SDK_PATH")
+		return()
+	endif()
 endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 
-# Game Name Customization
+# Game name
 set(PLAYDATE_GAME_NAME Nesnausk_CrankTheWorld)
 set(PLAYDATE_GAME_DEVICE Nesnausk_CrankTheWorld_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 
 set (DEMO_SOURCES
-	src/allocator.c
-	src/allocator.h
 	src/globals.c
 	src/globals.h
 	src/main.c
 	src/mathlib.h
+	src/platform.c
+	src/platform.h
 	src/effects/fx.c
 	src/effects/fx.h
 	src/effects/fx_plasma.c
@@ -58,9 +62,16 @@ if (TOOLCHAIN STREQUAL "armgcc")
 	add_executable(${PLAYDATE_GAME_DEVICE} ${DEMO_SOURCES})
 	# leave assembly files in build artifacts
 	target_compile_options(${PLAYDATE_GAME_DEVICE} PRIVATE -save-temps)
-else()
+	target_compile_definitions(${PLAYDATE_GAME_DEVICE} PRIVATE BUILD_PLATFORM_PLAYDATE)
+elseif(IS_PLAYDATE_OR_SIM)
 	add_library(${PLAYDATE_GAME_NAME} SHARED ${DEMO_SOURCES})
+	target_compile_definitions(${PLAYDATE_GAME_NAME} PRIVATE BUILD_PLATFORM_PLAYDATE)
+else()
+	add_executable(${PLAYDATE_GAME_NAME} ${DEMO_SOURCES})
 endif()
 
-include(${SDK}/C_API/buildsupport/playdate_game.cmake)
-
+if(IS_PLAYDATE_OR_SIM)
+	include(${SDK}/C_API/buildsupport/playdate_game.cmake)
+else()
+	target_compile_definitions(${PLAYDATE_GAME_NAME} PRIVATE BUILD_PLATFORM_PC)
+endif()

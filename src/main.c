@@ -1,27 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 
-#include "pd_api.h"
+#include "platform.h"
 
-#include "allocator.h"
 #include "effects/fx.h"
 #include "globals.h"
 #include "mathlib.h"
 #include "util/pixel_ops.h"
 
-static int update(void* userdata);
-
-//#define SHOW_STATS 1
-
-#if SHOW_STATS
-static const char* kFontPath = "/System/Fonts/Roobert-10-Bold.pft";
-static LCDFont* s_font = NULL;
-#endif
+#define SHOW_STATS 1
 
 #define PLAY_MUSIC 1
 #if PLAY_MUSIC
 static const char* kMusicPath = "music.pda";
-static FilePlayer* s_music;
-static bool s_music_ok;
+static PlatFileMusicPlayer* s_music;
 #endif
 
 typedef struct DemoImage {
@@ -29,7 +20,7 @@ typedef struct DemoImage {
 	int x, y;
 	int tstart, tend;
 	bool ending;
-	LCDBitmap* bitmap;
+	PlatBitmap* bitmap;
 } DemoImage;
 
 static DemoImage s_images[] = {
@@ -42,58 +33,35 @@ static DemoImage s_images[] = {
 };
 #define DEMO_IMAGE_COUNT (sizeof(s_images)/sizeof(s_images[0]))
 
-#ifdef _WINDLL
-__declspec(dllexport)
-#endif
-int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
+void app_initialize()
 {
-	if (event == kEventInit)
+	const char* err;
+
+	G.rng = 1;
+	G.frame_count = 0;
+	G.time = G.prev_time = -1.0f;
+	G.ending = false;
+
+	for (int i = 0; i < DEMO_IMAGE_COUNT; ++i)
 	{
-		const char* err;
-		pd_realloc = pd->system->realloc;
+		s_images[i].bitmap = plat_gfx_load_bitmap(s_images[i].file, &err);
+		if (s_images[i].bitmap == NULL)
+			plat_sys_log_error("Could not load bitmap %s: %s", s_images[i].file, err);
+	}
 
-		G.rng = 1;
-		G.pd = pd;
-		G.frame_count = 0;
-		G.time = G.prev_time = -1.0f;
-		G.ending = false;
-#if SHOW_STATS
-		s_font = pd->graphics->loadFont(kFontPath, &err);
-		if (s_font == NULL)
-			pd->system->error("Could not load font %s: %s", kFontPath, err);
-#endif
-
-		for (int i = 0; i < DEMO_IMAGE_COUNT; ++i)
-		{
-			s_images[i].bitmap = pd->graphics->loadBitmap(s_images[i].file, &err);
-			if (s_images[i].bitmap == NULL)
-				pd->system->error("Could not load bitmap %s: %s", s_images[i].file, err);
-		}
-
-		init_pixel_ops();
-		fx_plasma_init();
-		fx_raytrace_init();
-		fx_starfield_init();
-		fx_prettyhip_init();
+	init_pixel_ops();
+	fx_plasma_init();
+	fx_raytrace_init();
+	fx_starfield_init();
+	fx_prettyhip_init();
 
 #if PLAY_MUSIC
-		s_music_ok = false;
-		s_music = pd->sound->fileplayer->newPlayer();
-		s_music_ok = pd->sound->fileplayer->loadIntoPlayer(s_music, kMusicPath) != 0;
-		if (s_music_ok)
-		{
-			pd->sound->fileplayer->play(s_music, 1);
-			G.ending = false;
-		}
-		else
-			pd->system->error("Could not load music file %s", kMusicPath);
+	s_music = plat_audio_play_file(kMusicPath);
+	if (s_music)
+		G.ending = false;
+	else
+		plat_sys_log_error("Could not load music file %s", kMusicPath);
 #endif
-
-		pd->system->resetElapsedTime();
-		pd->system->setUpdateCallback(update, pd);
-	}
-	
-	return 0;
 }
 
 static int s_beat_frame_done = -1;
@@ -103,31 +71,31 @@ static int track_current_time()
 {
 	G.frame_count++;
 	G.prev_time = G.time;
-	G.time = G.pd->system->getElapsedTime() / TIME_UNIT_LENGTH_SECONDS;
+	G.time = plat_time_get() / TIME_UNIT_LENGTH_SECONDS;
 #if PLAY_MUSIC
-	if (s_music_ok && !G.ending)
+	if (s_music && !G.ending)
 	{
 		// Up/Down seek in time while music is playing
-		if (G.buttons_pressed & kButtonUp) {
-			float offset = G.pd->sound->fileplayer->getOffset(s_music);
+		if (G.buttons_pressed & kPlatButtonUp) {
+			float offset = plat_audio_get_time(s_music);
 			if (offset > TIME_SCRUB_SECONDS * 1.2f)
 			{
 				offset -= TIME_SCRUB_SECONDS;
-				G.pd->sound->fileplayer->setOffset(s_music, offset);
+				plat_audio_set_time(s_music, offset);
 			}
 		}
-		if (G.buttons_pressed & kButtonDown) {
-			float offset = G.pd->sound->fileplayer->getOffset(s_music);
+		if (G.buttons_pressed & kPlatButtonDown) {
+			float offset = plat_audio_get_time(s_music);
 			offset += 5.0f;
-			G.pd->sound->fileplayer->setOffset(s_music, offset);
+			plat_audio_set_time(s_music, offset);
 		}
-		G.time = G.pd->sound->fileplayer->getOffset(s_music) / TIME_UNIT_LENGTH_SECONDS;
+		G.time = plat_audio_get_time(s_music) / TIME_UNIT_LENGTH_SECONDS;
 
 		// Did the music stop?
-		if (!G.pd->sound->fileplayer->isPlaying(s_music))
+		if (!plat_audio_is_playing(s_music))
 		{
 			G.ending = true;
-			G.pd->system->resetElapsedTime();
+			plat_time_reset();
 			G.time = G.prev_time = 0.0f;
 		}
 	}
@@ -195,13 +163,13 @@ static void update_effect()
 	{
 		// after demo finish: interactive part
 		// A/B switch between effects
-		if (G.buttons_pressed & kButtonB) {
+		if (G.buttons_pressed & kPlatButtonB) {
 			clear_screen_buffers();
 			s_cur_effect--;
 			if (s_cur_effect < 0 || s_cur_effect >= DEMO_ENDING_EFFECT_COUNT)
 				s_cur_effect = DEMO_ENDING_EFFECT_COUNT - 1;
 		}
-		if (G.buttons_pressed & kButtonA) {
+		if (G.buttons_pressed & kPlatButtonA) {
 			clear_screen_buffers();
 			s_cur_effect++;
 			if (s_cur_effect < 0 || s_cur_effect >= DEMO_ENDING_EFFECT_COUNT)
@@ -220,23 +188,23 @@ static void update_images()
 		const DemoImage* img = &s_images[i];
 		if (img->bitmap == NULL || G.ending != img->ending || t < img->tstart || t > img->tend)
 			continue;
-		G.pd->graphics->drawBitmap(img->bitmap, img->x, img->y, kBitmapUnflipped);
+		plat_gfx_draw_bitmap(img->bitmap, img->x, img->y);
 	}
 }
 
-static int update(void* userdata)
+void app_update()
 {
 	// track inputs and time
-	PDButtons btCur, btPushed, btRel;
-	G.pd->system->getButtonState(&btCur, &btPushed, &btRel);
+	PlatButtons btCur, btPushed, btRel;
+	plat_input_get_buttons(&btCur, &btPushed, &btRel);
 	G.buttons_cur = btCur;
 	G.buttons_pressed = btPushed;
-	G.crank_angle_rad = G.pd->system->getCrankAngle() * (M_PIf / 180.0f);
+	G.crank_angle_rad = plat_input_get_crank_angle_rad();
 
 	int beat_at_end_of_frame = track_current_time();
 
-	G.framebuffer = G.pd->graphics->getFrame();
-	G.framebuffer_stride = LCD_ROWSIZE;
+	G.framebuffer = plat_gfx_get_frame();
+	G.framebuffer_stride = SCREEN_STRIDE_BYTES;
 
 	// update the effect
 	update_effect();
@@ -247,17 +215,9 @@ static int update(void* userdata)
 
 	// draw FPS, time
 #if SHOW_STATS
-	G.pd->graphics->fillRect(0, 0, 40, 32, kColorWhite);
-	char* buf;
-	int bufLen = G.pd->system->formatString(&buf, "t %i", (int)G.time);
-	G.pd->graphics->setFont(s_font);
-	G.pd->graphics->drawText(buf, bufLen, kASCIIEncoding, 0, 16);
-	pd_free(buf);
-	G.pd->system->drawFPS(0,0);
+	plat_gfx_draw_stats(G.time);
 #endif
 
 	// tell OS that we've updated the whole screen
-	G.pd->graphics->markUpdatedRows(0, LCD_ROWS-1);
-
-	return 1;
+	plat_gfx_mark_updated_rows(0, SCREEN_Y-1);
 }

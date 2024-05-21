@@ -10,8 +10,8 @@
 #include <string.h>
 #include "render.h"
 
-#define LCD_ROWS 240
-#define LCD_COLUMNS 400
+#define SCREEN_Y 240
+#define SCREEN_X 400
 
 static inline void
 _drawMaskPattern(uint32_t* p, uint32_t mask, uint32_t color)
@@ -25,14 +25,14 @@ _drawMaskPattern(uint32_t* p, uint32_t mask, uint32_t color)
 static void
 drawFragment(uint32_t* row, int x1, int x2, uint32_t color)
 {
-	if ( x2 < 0 || x1 >= LCD_COLUMNS )
+	if ( x2 < 0 || x1 >= SCREEN_X )
 		return;
 	
 	if ( x1 < 0 )
 		x1 = 0;
 	
-	if ( x2 > LCD_COLUMNS )
-		x2 = LCD_COLUMNS;
+	if ( x2 > SCREEN_X )
+		x2 = SCREEN_X;
 	
 	if ( x1 > x2 )
 		return;
@@ -104,7 +104,7 @@ void drawLine(uint8_t* bitmap, int rowstride, const float3* p1, const float3* p2
 	int y = (int)p1->y;
 	int endy = (int)p2->y;
 	
-	if ( y >= LCD_ROWS || endy < 0 || MIN(p1->x, p2->x) >= LCD_COLUMNS || MAX(p1->x, p2->x) < 0 )
+	if ( y >= SCREEN_Y || endy < 0 || MIN(p1->x, p2->x) >= SCREEN_X || MAX(p1->x, p2->x) < 0 )
 		return;
 	
 	int32_t x = (int32_t)(p1->x * (1<<16));
@@ -133,7 +133,7 @@ void drawLine(uint8_t* bitmap, int rowstride, const float3* p1, const float3* p2
 		else
 			drawFragment((uint32_t*)&bitmap[y*rowstride], x>>16, (x1>>16) + thick, color);
 		
-		if ( ++y == LCD_ROWS )
+		if ( ++y == SCREEN_Y )
 			break;
 
 		x = x1;
@@ -224,9 +224,9 @@ void fillTriangle(uint8_t* bitmap, int rowstride, const float3* p1, const float3
 	
 	sortTri(&p1, &p2, &p3);
 	
-	int endy = MIN(LCD_ROWS, (int)p3->y);
+	int endy = MIN(SCREEN_Y, (int)p3->y);
 	
-	if ( p1->y > LCD_ROWS || endy < 0 )
+	if ( p1->y > SCREEN_Y || endy < 0 )
 		return;
 
 	int32_t x1 = (int32_t)(p1->x * (1<<16));
@@ -238,7 +238,7 @@ void fillTriangle(uint8_t* bitmap, int rowstride, const float3* p1, const float3
 	int32_t dx1 = MIN(sb, sc);
 	int32_t dx2 = MAX(sb, sc);
 	
-	fillRange(bitmap, rowstride, (int)p1->y, MIN(LCD_ROWS, (int)p2->y), &x1, dx1, &x2, dx2, pattern);
+	fillRange(bitmap, rowstride, (int)p1->y, MIN(SCREEN_Y, (int)p2->y), &x1, dx1, &x2, dx2, pattern);
 	
 	int dx = slope(p2->x, p2->y, p3->x, p3->y);
 	
