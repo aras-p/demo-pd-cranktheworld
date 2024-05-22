@@ -631,6 +631,9 @@ static void sapp_onevent(const sapp_event* evt)
 			s_but_pushed |= kPlatButtonB;
 			s_but_current |= kPlatButtonB;
 		}
+        if (evt->key_code == SAPP_KEYCODE_ESCAPE) {
+            sapp_quit();
+        }
 	}
 	if (evt->type == SAPP_EVENTTYPE_KEY_UP)
 	{
