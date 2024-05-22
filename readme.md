@@ -47,3 +47,23 @@ Playdate A/B buttons. You can also use the crank to orbit/rotate the camera or c
 Actually, you can use the crank to control the camera during the regular demo playback as well.
 
 Blog post with some more details about development: https://aras-p.info/blog/2024/05/20/Crank-the-World-Playdate-demo/
+
+### Building
+
+The demo can be built for several "platforms":
+- Playdate device itself,
+- Playdate SDK simulator,
+- Regular Windows or Mac binary. This one does not require having Playdate or the SDK for it.
+
+On Windows / Visual Studio, easiest is opening the folder directly from within VS. Then pick one of the configuration configs and build.
+The actual Playdate (and simulator) builds I only tried on Windows. They may or might not work when done on other host platforms.
+
+On Mac, I used Xcode, like making a `build` subfolder, and doing `cmake -G Xcode ..` from within it. However that builds the actual executable
+into slightly improper place compared to where the data files are; you'd need patch that up manually. Someday I should fix this.
+
+### License
+
+Everything I wrote myself is Unlicense / Public Domain. However some 3rd party libraries are used too:
+- (only on Windows/Mac build): [**Sokol**](https://github.com/floooh/sokol): sokol_app, sokol_audio, sokol_gfx, sokol_time. zlib/libpng license.
+- (only on Windows/Mac build): [**stb_image.h**](https://github.com/nothings/stb/blob/master/stb_image.h): for loading PNG files. Public domain.
+- [**AHEasing**](https://github.com/warrenm/AHEasing). Public domain.
