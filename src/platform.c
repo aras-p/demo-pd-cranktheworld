@@ -236,8 +236,8 @@ PlatBitmap* plat_gfx_load_bitmap(const char* file_path, const char** outerr)
 	*outerr = "";
 
 	char path[1000];
-	size_t path_len = strlen(file_path);
-	memcpy(path, file_path, path_len + 1);
+	snprintf(path, sizeof(path), "data/%s", file_path);
+	size_t path_len = strlen(path);
 	path[path_len - 3] = 'p';
 	path[path_len - 2] = 'n';
 	path[path_len - 1] = 'g';
@@ -290,7 +290,9 @@ void plat_gfx_draw_bitmap(PlatBitmap* bitmap, int x, int y)
 
 PlatFile* plat_file_open_read(const char* file_path)
 {
-	return (PlatFile*)fopen(file_path, "rb");
+	char path[1000];
+	snprintf(path, sizeof(path), "data/%s", file_path);
+	return (PlatFile*)fopen(path, "rb");
 }
 int plat_file_read(PlatFile* file, void* buf, uint32_t len)
 {
@@ -336,8 +338,8 @@ PlatFileMusicPlayer* plat_audio_play_file(const char* file_path)
 
 	// read file into memory
 	char path[1000];
-	size_t path_len = strlen(file_path);
-	memcpy(path, file_path, path_len + 1);
+	snprintf(path, sizeof(path), "data/%s", file_path);
+	size_t path_len = strlen(path);
 	path[path_len - 3] = 'w';
 	path[path_len - 2] = 'a';
 	path[path_len - 1] = 'v';

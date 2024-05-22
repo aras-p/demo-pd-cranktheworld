@@ -86,6 +86,11 @@ else()
 
 	add_custom_command(
 		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory
+		${CMAKE_CURRENT_BINARY_DIR}/data
+	)
+	add_custom_command(
+		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/music.wav
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/BlueNoise.tga
@@ -95,7 +100,7 @@ else()
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_logo.png
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_theworld.png
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_wantsto.png
-		${CMAKE_CURRENT_BINARY_DIR}
+		${CMAKE_CURRENT_BINARY_DIR}/data
 	)
 
 endif()
