@@ -409,10 +409,11 @@ void plat_input_get_buttons(PlatButtons* current, PlatButtons* pushed, PlatButto
 	*released = s_but_released;
 }
 
+static float s_crank_angle = 0.0f;
+
 float plat_input_get_crank_angle_rad()
 {
-	//@TODO
-	return 0.0f;
+	return s_crank_angle;
 }
 
 // sokol_app setup
@@ -604,6 +605,11 @@ static void sapp_onevent(const sapp_event* evt)
 			s_but_released |= kPlatButtonB;
 			s_but_current &= ~kPlatButtonB;
 		}
+	}
+	if (evt->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
+	{
+		s_crank_angle += evt->scroll_y * 0.03f;
+		s_crank_angle = fmodf(s_crank_angle, 3.14159265f * 2.0f);
 	}
 }
 
