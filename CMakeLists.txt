@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
+
+cmake_policy(SET CMP0091 NEW) # MSVC runtime library control
+
 set(CMAKE_C_STANDARD 11)
 
 # Variables:
@@ -76,6 +79,8 @@ if(IS_PLAYDATE_OR_SIM)
 	include(${SDK}/C_API/buildsupport/playdate_game.cmake)
 else()
 	target_compile_definitions(${PLAYDATE_GAME_NAME} PRIVATE BUILD_PLATFORM_PC _CRT_SECURE_NO_WARNINGS)
+
+	set_property(TARGET ${PLAYDATE_GAME_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 	# Enable debug symbols (RelWithDebInfo is not only that; it also turns on
 	# incremental linking, disables some inlining, etc. etc.)
