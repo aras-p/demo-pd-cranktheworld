@@ -7,7 +7,7 @@
 #include "mathlib.h"
 #include "util/pixel_ops.h"
 
-#define SHOW_STATS 1
+//#define SHOW_STATS 1
 
 #define PLAY_MUSIC 1
 #if PLAY_MUSIC
