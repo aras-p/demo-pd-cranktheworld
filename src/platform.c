@@ -624,7 +624,8 @@ static void sapp_onevent(const sapp_event* evt)
 
 sapp_desc sokol_main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
-	return (sapp_desc) {
+
+	sapp_desc res = (sapp_desc) {
 		.init_cb = sapp_init,
 		.frame_cb = sapp_frame,
 		.cleanup_cb = sapp_cleanup,
@@ -635,6 +636,21 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 		.icon.sokol_default = true,
 		.logger.func = slog_func,
 	};
+
+	// try to load icon
+	int icon_width, icon_height, icon_comp;
+	uint8_t* icon_image = stbi_load("data/icon.png", &icon_width, &icon_height, &icon_comp, 4);
+	if (icon_image != NULL) {
+		res.icon.sokol_default = false;
+		res.icon.images[0] = (sapp_image_desc){
+			.width = icon_width,
+			.height = icon_height,
+			.pixels.ptr = icon_image,
+			.pixels.size = icon_width * icon_height * 4
+		};
+	}
+
+	return res;
 }
 
 
