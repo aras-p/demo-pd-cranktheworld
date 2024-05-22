@@ -54,6 +54,8 @@ set (DEMO_SOURCES
 	src/util/pixel_ops.h
 	src/util/image_loader.c
 	src/util/image_loader.h
+	src/util/wav_ima_adpcm.c
+	src/util/wav_ima_adpcm.h
 	src/external/aheasing/easing.c
 	src/external/aheasing/easing.h
 )
@@ -78,6 +80,7 @@ else()
 	add_custom_command(
 		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_CURRENT_SOURCE_DIR}/Source/music.wav
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/BlueNoise.tga
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_crank.png
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/text_everybody.png

@@ -189,6 +189,8 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #define STBI_ONLY_PNG
 #include "external/stb/stb_image.h"
 
+#include "util/wav_ima_adpcm.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -318,10 +320,52 @@ void plat_sys_log_error(const char* fmt, ...)
 	va_end(args);
 }
 
+typedef struct PlatFileMusicPlayer {
+	uint8_t* file;
+	int file_size;
+	wav_file_desc wav;
+	wav_decode_state decode_state;
+	int decode_pos;
+} PlatFileMusicPlayer;
+
+static PlatFileMusicPlayer* s_current_music;
+
 PlatFileMusicPlayer* plat_audio_play_file(const char* file_path)
 {
-	//@TODO
-	return NULL;
+	s_current_music = NULL;
+
+	// read file into memory
+	char path[1000];
+	size_t path_len = strlen(file_path);
+	memcpy(path, file_path, path_len + 1);
+	path[path_len - 3] = 'w';
+	path[path_len - 2] = 'a';
+	path[path_len - 1] = 'v';
+
+	FILE* file = fopen(path, "rb");
+	if (file == NULL)
+		return NULL;
+
+	PlatFileMusicPlayer* res = (PlatFileMusicPlayer*)plat_malloc(sizeof(PlatFileMusicPlayer));
+	res->decode_pos = 0;
+	fseek(file, 0, SEEK_END);
+	res->file_size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	res->file = plat_malloc(res->file_size);
+	fread(res->file, 1, res->file_size, file);
+	fclose(file);
+
+	// parse wav header
+	if (!wav_parse_header(res->file, res->file_size, &res->wav))
+		return NULL;
+
+	if (res->wav.sample_format != 0x11) // not IMA ADPCM
+		return NULL;
+
+	wav_decode_state_init(&res->wav, &res->decode_state);
+
+	s_current_music = res;
+	return res;
 }
 
 bool plat_audio_is_playing(PlatFileMusicPlayer* music)
@@ -369,6 +413,24 @@ float plat_input_get_crank_angle_rad()
 
 // sokol_app setup
 
+static void audio_sample_cb(float* buffer, int num_frames, int num_channels)
+{
+	if (s_current_music == NULL)
+	{
+		memset(buffer, 0, num_frames * num_channels * sizeof(buffer[0]));
+		return;
+	}
+
+	assert(1 == num_channels);
+
+	int decode_frames = num_frames;
+	if (decode_frames > s_current_music->wav.sample_count - s_current_music->decode_pos)
+		decode_frames = s_current_music->wav.sample_count - s_current_music->decode_pos;
+
+	wav_ima_adpcm_decode(buffer, s_current_music->decode_pos, decode_frames, s_current_music->wav.sample_data, &s_current_music->decode_state);
+	s_current_music->decode_pos += decode_frames;
+}
+
 static const char* kSokolVertexSource =
 "struct v2f {\n"
 "  float2 uv : TEXCOORD0;\n"
@@ -400,6 +462,7 @@ static sg_sampler sok_sampler;
 
 static void sapp_init(void)
 {
+	// graphics
 	sg_setup(&(sg_desc) {
 		.environment = sglue_environment(),
 		.logger.func = slog_func,
@@ -438,6 +501,13 @@ static void sapp_init(void)
 		.cull_mode = SG_CULLMODE_NONE,
 	});
 
+	// audio
+	saudio_setup(&(saudio_desc) {
+		.sample_rate = 44100,
+		.num_channels = 1,
+		.stream_cb = audio_sample_cb,
+		.logger.func = slog_func,
+	});
 
 	stm_setup();
 	sok_start_time = stm_now();
@@ -469,6 +539,7 @@ static void sapp_frame(void)
 
 static void sapp_cleanup(void)
 {
+	saudio_shutdown();
 	sg_shutdown();
 }
 
