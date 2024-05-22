@@ -233,12 +233,15 @@ void plat_gfx_draw_stats(float par1)
 	//@TODO
 }
 
+static char s_data_path[1000];
+
 PlatBitmap* plat_gfx_load_bitmap(const char* file_path, const char** outerr)
 {
+    
 	*outerr = "";
 
 	char path[1000];
-	snprintf(path, sizeof(path), "data/%s", file_path);
+	snprintf(path, sizeof(path), "%s/%s", s_data_path, file_path);
 	size_t path_len = strlen(path);
 	path[path_len - 3] = 'p';
 	path[path_len - 2] = 'n';
@@ -293,7 +296,7 @@ void plat_gfx_draw_bitmap(PlatBitmap* bitmap, int x, int y)
 PlatFile* plat_file_open_read(const char* file_path)
 {
 	char path[1000];
-	snprintf(path, sizeof(path), "data/%s", file_path);
+	snprintf(path, sizeof(path), "%s/%s", s_data_path, file_path);
 	return (PlatFile*)fopen(path, "rb");
 }
 int plat_file_read(PlatFile* file, void* buf, uint32_t len)
@@ -340,7 +343,7 @@ PlatFileMusicPlayer* plat_audio_play_file(const char* file_path)
 
 	// read file into memory
 	char path[1000];
-	snprintf(path, sizeof(path), "data/%s", file_path);
+	snprintf(path, sizeof(path), "%s/%s", s_data_path, file_path);
 	size_t path_len = strlen(path);
 	path[path_len - 3] = 'w';
 	path[path_len - 2] = 'a';
@@ -663,8 +666,27 @@ static void sapp_onevent(const sapp_event* evt)
 	}
 }
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <libgen.h>
+#endif
+
 sapp_desc sokol_main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
+
+    // figure out where is the data folder
+#ifdef __APPLE__
+    char exe_path[1000];
+    uint32_t exe_path_size = sizeof(exe_path);
+    if (_NSGetExecutablePath(exe_path, &exe_path_size) != 0)
+        exit(1);
+    char exe_real_path[1000];
+    realpath(exe_path, exe_real_path);
+    char* exe_dir = dirname(exe_real_path);
+    snprintf(s_data_path, sizeof(s_data_path), "%s/../Resources", exe_dir);
+#else
+    strncpy(s_data_path, "data", sizeof(s_data_path));
+#endif
 
 	sapp_desc res = (sapp_desc) {
 		.init_cb = sapp_init,
@@ -680,7 +702,9 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 
 	// try to load icon
 	int icon_width, icon_height, icon_comp;
-	uint8_t* icon_image = stbi_load("data/icon.png", &icon_width, &icon_height, &icon_comp, 4);
+    char icon_path[1000];
+    snprintf(icon_path, sizeof(icon_path), "%s/icon.png", s_data_path);
+	uint8_t* icon_image = stbi_load(icon_path, &icon_width, &icon_height, &icon_comp, 4);
 	if (icon_image != NULL) {
 		res.icon.sokol_default = false;
 		res.icon.images[0] = (sapp_image_desc){

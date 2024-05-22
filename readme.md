@@ -58,8 +58,7 @@ The demo can be built for several "platforms":
 On Windows / Visual Studio, easiest is opening the folder directly from within VS. Then pick one of the configuration configs and build.
 The actual Playdate (and simulator) builds I only tried on Windows. They may or might not work when done on other host platforms.
 
-On Mac, I used Xcode, like making a `build` subfolder, and doing `cmake -G Xcode ..` from within it. However that builds the actual executable
-into slightly improper place compared to where the data files are; you'd need patch that up manually. Someday I should fix this.
+On Mac, I used Xcode: make a `build` subfolder, and do `cmake -G Xcode ..` from within it.
 
 ### License
 
