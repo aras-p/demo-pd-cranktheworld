@@ -2,11 +2,12 @@
 
 #include "../globals.h"
 
-#include "pd_api.h"
+#include "../platform.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
 #include "../external/aheasing/easing.h"
 #include "../mini3d/render.h"
+#include <string.h>
 
 typedef struct TraceState
 {
@@ -284,8 +285,8 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 	float transition_in = 1.0f;
 	if (section_alpha < 1.0f/8.0f)
 		transition_in = CubicEaseInOut(section_alpha * 8.0f);
-	int transition_x = (int)(LCD_COLUMNS / 4 * transition_in);
-	int transition_y = (int)(LCD_ROWS / 4 * transition_in);
+	int transition_x = (int)(SCREEN_X / 4 * transition_in);
+	int transition_y = (int)(SCREEN_Y / 4 * transition_in);
 	bool section8 = section_idx == 8;
 	float divider_angle1 = G.ending ? G.crank_angle_rad : (section_alpha * M_PIf + (section8 ? M_PIf : 0.0f));
 	float divider_angle2 = divider_angle1 + (M_PIf * 0.5f) * (section8 ? (1.0f+section_alpha) : 1.0f);
@@ -296,12 +297,12 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 
 	float xsize = 1.0f;
 	float ysize = 0.6f;
-	float dx = xsize / LCD_COLUMNS;
-	float dy = ysize / LCD_ROWS;
+	float dx = xsize / SCREEN_X;
+	float dy = ysize / SCREEN_Y;
 
 	// temporal: one ray for each 2x2 block, and also update one pixel within each 2x2 macroblock (16x fewer rays): 28fps (35ms)
 	float y = ysize / 2 - dy;
-	for (int py = 0; py < LCD_ROWS / 2; ++py, y -= dy * 2)
+	for (int py = 0; py < SCREEN_Y / 2; ++py, y -= dy * 2)
 	{
 		// Temporal: every frame update just one out of every 2x2 pixel blocks.
 		// Which means every other frame we skip every other row.
@@ -309,7 +310,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 			continue;
 
 		float x = -xsize / 2 + dx;
-		int pix_idx = py * LCD_COLUMNS / 2;
+		int pix_idx = py * SCREEN_X / 2;
 		// And for each row we step at 2 pixels, but shift location by one every other frame.
 		if ((G.frame_count & 2)) {
 			x += dx;
@@ -318,7 +319,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		
 		if (section_idx == 0) // octa field
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val = trace_octa_field(&st, x, y);
 				g_screen_buffer_2x2sml[pix_idx] = val;
@@ -326,7 +327,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx == 1) // sphere field
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val = trace_sphere_field(&st, x, y);
 				g_screen_buffer_2x2sml[pix_idx] = val;
@@ -334,7 +335,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx == 2) // xor towers
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val = trace_xor_towers(&st, x, y);
 				g_screen_buffer_2x2sml[pix_idx] = val;
@@ -342,7 +343,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx == 3) // sponge
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val = trace_sponge(&st, x, y);
 				g_screen_buffer_2x2sml[pix_idx] = val;
@@ -350,7 +351,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx == 4) // puls
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val = trace_puls(&st, x, y);
 				g_screen_buffer_2x2sml[pix_idx] = val;
@@ -358,7 +359,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx == 5) // top: sphere field, bottom: puls
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val;
 				if (py < transition_y)
@@ -370,10 +371,10 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx == 6) // top: sponge, sphere field, bottom: xor, puls
 		{
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
 				int val;
-				if (py < LCD_ROWS / 4)
+				if (py < SCREEN_Y / 4)
 				{
 					if (px < transition_x)
 						val = trace_sponge(&st, x, y);
@@ -392,10 +393,10 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 		}
 		else if (section_idx >= 7) // same as above, divider lines rotating
 		{
-			float pdy = (float)(py - LCD_ROWS / 4);
-			for (int px = 0; px < LCD_COLUMNS / 2; px += 2, x += dx * 4, pix_idx += 2)
+			float pdy = (float)(py - SCREEN_Y / 4);
+			for (int px = 0; px < SCREEN_X / 2; px += 2, x += dx * 4, pix_idx += 2)
 			{
-				float pdx = (float)(px - LCD_COLUMNS / 4);
+				float pdx = (float)(px - SCREEN_X / 4);
 				float det1 = divider_dx1 * pdy - divider_dy1 * pdx;
 				float det2 = divider_dx2 * pdy - divider_dy2 * pdx;
 				int quad_index = (det1 >= 0.0f ? 0 : 1) + (det2 >= 0.0f ? 2 : 0);
@@ -413,7 +414,7 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 			}
 		}
 	}
-	memcpy(g_screen_buffer, g_screen_buffer_2x2sml, LCD_COLUMNS / 2 * LCD_ROWS / 2);
+	memcpy(g_screen_buffer, g_screen_buffer_2x2sml, SCREEN_X / 2 * SCREEN_Y / 2);
 	draw_dithered_screen_2x2(G.framebuffer, 1);
 
 	// draw divider lines
@@ -422,34 +423,34 @@ void fx_raymarch_update(float start_time, float end_time, float alpha)
 	uint8_t pattern[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	if (section_idx == 5)
 	{
-		linea.x = 0; lineb.x = LCD_COLUMNS - 1;
+		linea.x = 0; lineb.x = SCREEN_X - 1;
 		linea.y = lineb.y = (float)(transition_y * 2);
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
 	if (section_idx == 6)
 	{
-		linea.x = 0; lineb.x = LCD_COLUMNS - 1;
-		linea.y = lineb.y = LCD_ROWS/2;
+		linea.x = 0; lineb.x = SCREEN_X - 1;
+		linea.y = lineb.y = SCREEN_Y/2;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 
 		linea.x = lineb.x = 1 + (float)(transition_x * 2);
-		linea.y = 0; lineb.y = LCD_ROWS-1;
+		linea.y = 0; lineb.y = SCREEN_Y-1;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
 	if (section_idx >= 7)
 	{
 		// draw rotating divider lines at previous frame angles, looks a tiny bit
 		// better due to temporal stuff
-		linea.x = 1 + LCD_COLUMNS / 2 + s_prev_divider_dx1 * LCD_COLUMNS;
-		linea.y = LCD_ROWS / 2 + s_prev_divider_dy1 * LCD_COLUMNS;
-		lineb.x = 1 + LCD_COLUMNS / 2 - s_prev_divider_dx1 * LCD_COLUMNS;
-		lineb.y = LCD_ROWS / 2 - s_prev_divider_dy1 * LCD_COLUMNS;
+		linea.x = 1 + SCREEN_X / 2 + s_prev_divider_dx1 * SCREEN_X;
+		linea.y = SCREEN_Y / 2 + s_prev_divider_dy1 * SCREEN_X;
+		lineb.x = 1 + SCREEN_X / 2 - s_prev_divider_dx1 * SCREEN_X;
+		lineb.y = SCREEN_Y / 2 - s_prev_divider_dy1 * SCREEN_X;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 
-		linea.x = 1 + LCD_COLUMNS / 2 + s_prev_divider_dx2 * LCD_COLUMNS;
-		linea.y = LCD_ROWS / 2 + s_prev_divider_dy2 * LCD_COLUMNS;
-		lineb.x = 1 + LCD_COLUMNS / 2 - s_prev_divider_dx2 * LCD_COLUMNS;
-		lineb.y = LCD_ROWS / 2 - s_prev_divider_dy2 * LCD_COLUMNS;
+		linea.x = 1 + SCREEN_X / 2 + s_prev_divider_dx2 * SCREEN_X;
+		linea.y = SCREEN_Y / 2 + s_prev_divider_dy2 * SCREEN_X;
+		lineb.x = 1 + SCREEN_X / 2 - s_prev_divider_dx2 * SCREEN_X;
+		lineb.y = SCREEN_Y / 2 - s_prev_divider_dy2 * SCREEN_X;
 		drawLine(G.framebuffer, G.framebuffer_stride, &linea, &lineb, 1, pattern);
 	}
 

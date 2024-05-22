@@ -2,7 +2,7 @@
 
 #include "../globals.h"
 
-#include "pd_api.h"
+#include "../platform.h"
 #include "fx.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
@@ -137,13 +137,13 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 
 	float xsize = 3.333f;
 	float ysize = 2.0f;
-	float dx = xsize / LCD_COLUMNS;
-	float dy = ysize / LCD_ROWS;
+	float dx = xsize / SCREEN_X;
+	float dy = ysize / SCREEN_Y;
 
 	int t_frame_index = G.frame_count & 3;
 
 	float y = ysize / 2 - dy;
-	for (int py = 0; py < LCD_ROWS; ++py, tpos4 += 3, tpos3 += 1, y -= dy)
+	for (int py = 0; py < SCREEN_Y; ++py, tpos4 += 3, tpos3 += 1, y -= dy)
 	{
 		tpos3 &= TRIG_TABLE_MASK;
 		tpos4 &= TRIG_TABLE_MASK;
@@ -154,7 +154,7 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 			continue; // this row does not evaluate any pixels
 
 		float x = -xsize / 2 + dx * 0.5f;
-		int pix_idx = py * LCD_COLUMNS;
+		int pix_idx = py * SCREEN_X;
 		x += dx * col_offset;
 		pix_idx += col_offset;
 
@@ -165,7 +165,7 @@ void fx_plasma_update(float start_time, float end_time, float alpha)
 			st.rotm_tx6 = cosf(tt * 0.6f); st.rotm_ty6 = sinf(tt * 0.6f);
 		}
 
-		for (int px = col_offset; px < LCD_COLUMNS; px += 2, x += dx * 2, pix_idx += 2)
+		for (int px = col_offset; px < SCREEN_X; px += 2, x += dx * 2, pix_idx += 2)
 		{
 			int tpos1 = s_plasma_pos1 + 5 + px * 5;
 			int tpos2 = s_plasma_pos2 + 3 + px * 3;

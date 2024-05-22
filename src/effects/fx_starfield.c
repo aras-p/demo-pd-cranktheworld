@@ -2,7 +2,7 @@
 
 #include "../globals.h"
 
-#include "pd_api.h"
+#include "../platform.h"
 #include "../external/aheasing/easing.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
@@ -40,13 +40,13 @@ void fx_starfield_update(float start_time, float end_time, float alpha)
 	if (alpha < 0.5f)
 	{
 		draw_count = (int)lerp(STARS_START, STARS_MID, alpha * 2.0f);
-		G.pd->graphics->clear(kColorWhite);
+		plat_gfx_clear(kSolidColorWhite);
 	}
 	else
 	{
 		draw_count = (int)lerp(STARS_MID, STARS_END, (alpha - 0.5f) * 2.0f);
 		if (G.beat || G.ending)
-			G.pd->graphics->clear(kColorWhite);
+			plat_gfx_clear(kSolidColorWhite);
 	}
 
 	for (int i = 0; i < draw_count; ++i)
@@ -61,9 +61,9 @@ void fx_starfield_update(float start_time, float end_time, float alpha)
 		}
 
 		// project to screen
-		int px = (int)(s->pos.x / s->pos.z + LCD_COLUMNS / 2 + 0.5f);
-		int py = (int)(s->pos.y / s->pos.z + LCD_ROWS / 2 + 0.5f);
-		if (px < 0 || px >= LCD_COLUMNS || py < 0 || py >= LCD_ROWS) {
+		int px = (int)(s->pos.x / s->pos.z + SCREEN_X / 2 + 0.5f);
+		int py = (int)(s->pos.y / s->pos.z + SCREEN_Y / 2 + 0.5f);
+		if (px < 0 || px >= SCREEN_X || py < 0 || py >= SCREEN_Y) {
 			star_init(s, &G.rng);
 			continue;
 		}

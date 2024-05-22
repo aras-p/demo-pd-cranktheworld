@@ -3,18 +3,18 @@
 #include "pixel_ops.h"
 #include "image_loader.h"
 
-#include "../allocator.h"
 #include "../globals.h"
 #include "../mathlib.h"
 
-#include "pd_api.h"
+#include "../platform.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 static uint8_t* s_blue_noise;
 
-uint8_t g_screen_buffer[LCD_COLUMNS * LCD_ROWS];
-uint8_t g_screen_buffer_2x2sml[LCD_COLUMNS/2 * LCD_ROWS/2];
+uint8_t g_screen_buffer[SCREEN_X * SCREEN_Y];
+uint8_t g_screen_buffer_2x2sml[SCREEN_X/2 * SCREEN_Y/2];
 
 void clear_screen_buffers()
 {
@@ -105,9 +105,9 @@ int g_order_pattern_4x4[16][4] = {
 void init_pixel_ops()
 {
 	int bn_w, bn_h;
-	s_blue_noise = read_tga_file_grayscale("BlueNoise.tga", G.pd, &bn_w, &bn_h);
-	if (bn_w != LCD_COLUMNS || bn_h != LCD_ROWS) {
-		pd_free(s_blue_noise);
+	s_blue_noise = read_tga_file_grayscale("BlueNoise.tga", &bn_w, &bn_h);
+	if (bn_w != SCREEN_X || bn_h != SCREEN_Y) {
+		plat_free(s_blue_noise);
 		s_blue_noise = NULL;
 	}
 
@@ -118,10 +118,10 @@ void init_pixel_ops()
 
 void draw_dithered_scanline(const uint8_t* values, int y, int bias, uint8_t* framebuffer)
 {
-	uint8_t scanline[LCD_ROWSIZE];
-	const uint8_t* noise_row = s_blue_noise + y * LCD_COLUMNS;
+	uint8_t scanline[SCREEN_STRIDE_BYTES];
+	const uint8_t* noise_row = s_blue_noise + y * SCREEN_X;
 	int px = 0;
-	for (int bx = 0; bx < LCD_COLUMNS / 8; ++bx) {
+	for (int bx = 0; bx < SCREEN_X / 8; ++bx) {
 		uint8_t pixbyte = 0xFF;
 		for (int ib = 0; ib < 8; ++ib, ++px) {
 			if (values[px] <= noise_row[px] + bias) {
@@ -131,29 +131,29 @@ void draw_dithered_scanline(const uint8_t* values, int y, int bias, uint8_t* fra
 		scanline[bx] = pixbyte;
 	}
 
-	uint8_t* row = framebuffer + y * LCD_ROWSIZE;
+	uint8_t* row = framebuffer + y * SCREEN_STRIDE_BYTES;
 	memcpy(row, scanline, sizeof(scanline));
 }
 
 void draw_dithered_screen(uint8_t* framebuffer, int bias)
 {
 	const uint8_t* src = g_screen_buffer;
-	for (int y = 0; y < LCD_ROWS; ++y)
+	for (int y = 0; y < SCREEN_Y; ++y)
 	{
 		draw_dithered_scanline(src, y, bias, framebuffer);
-		src += LCD_COLUMNS;
+		src += SCREEN_X;
 	}
 }
 
 void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter)
 {
-	uint8_t rowvalues[LCD_COLUMNS];
+	uint8_t rowvalues[SCREEN_X];
 	if (filter == 0)
 	{
 		// use same source value for each 2x2 block
 		int src_idx = 0;
-		for (int y = 0; y < LCD_ROWS / 2; ++y) {
-			for (int x = 0; x < LCD_COLUMNS / 2; ++x, ++src_idx) {
+		for (int y = 0; y < SCREEN_Y / 2; ++y) {
+			for (int x = 0; x < SCREEN_X / 2; ++x, ++src_idx) {
 				uint8_t val = g_screen_buffer[src_idx];
 				rowvalues[x * 2 + 0] = val;
 				rowvalues[x * 2 + 1] = val;
@@ -166,10 +166,10 @@ void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter)
 	{
 		// filter values horizontally: bottom to top, right to left.
 		// this will expand image to be full width, but half height.
-		for (int y = LCD_ROWS/2 - 1; y >= 0; --y) {
-			int src_idx = y * LCD_COLUMNS / 2;
-			int dst_idx = y * LCD_COLUMNS;
-			for (int x = LCD_COLUMNS / 2 - 1; x >= 0; --x) {
+		for (int y = SCREEN_Y/2 - 1; y >= 0; --y) {
+			int src_idx = y * SCREEN_X / 2;
+			int dst_idx = y * SCREEN_X;
+			for (int x = SCREEN_X / 2 - 1; x >= 0; --x) {
 				int val_prev = g_screen_buffer[src_idx + (x > 0 ? x - 1 : 0)];
 				int val_curr = g_screen_buffer[src_idx + x];
 				g_screen_buffer[dst_idx + x * 2 + 0] = (val_prev + val_curr) >> 1;
@@ -177,13 +177,13 @@ void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter)
 			}
 		}
 		// draw scanlines, filtering odd ones
-		for (int y = 0; y < LCD_ROWS / 2; ++y)
+		for (int y = 0; y < SCREEN_Y / 2; ++y)
 		{
-			const uint8_t* row = &g_screen_buffer[y * LCD_COLUMNS];
+			const uint8_t* row = &g_screen_buffer[y * SCREEN_X];
 			// draw raw scanline
 			draw_dithered_scanline(row, y * 2 + 0, 0, framebuffer);
 			int next_y = y * 2 + 2;
-			if (next_y >= LCD_ROWS)
+			if (next_y >= SCREEN_Y)
 			{
 				// nothing to filter with below, just draw previous
 				draw_dithered_scanline(row, y * 2 + 1, 0, framebuffer);
@@ -191,9 +191,9 @@ void draw_dithered_screen_2x2(uint8_t* framebuffer, int filter)
 			else
 			{
 				// compute filtered scanline
-				for (int x = 0; x < LCD_COLUMNS; ++x)
+				for (int x = 0; x < SCREEN_X; ++x)
 				{
-					rowvalues[x] = ((int)row[x] + (int)row[x + LCD_COLUMNS]) >> 1;
+					rowvalues[x] = ((int)row[x] + (int)row[x + SCREEN_X]) >> 1;
 				}
 				draw_dithered_scanline(rowvalues, y * 2 + 1, 0, framebuffer);
 			}

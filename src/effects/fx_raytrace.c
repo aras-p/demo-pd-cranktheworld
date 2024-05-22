@@ -2,7 +2,7 @@
 
 #include "../globals.h"
 
-#include "pd_api.h"
+#include "../platform.h"
 #include "fx.h"
 #include "../mathlib.h"
 #include "../util/pixel_ops.h"
@@ -279,7 +279,7 @@ static void do_render(float crank_angle, float time, float start_time, float end
 	float ss = sinf(cangle);
 	float cam_dist = 4.0f;
 	camera_init(&s_camera, (float3) { ss * cam_dist, 2.3f, cs * cam_dist },
-		(float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)LCD_COLUMNS / (float)LCD_ROWS, 0.1f, 3.0f);
+		(float3) { 0, 1, 0 }, (float3) { 0, 1, 0 }, 60.0f, (float)SCREEN_X / (float)SCREEN_Y, 0.1f, 3.0f);
 
 	// animate spheres
 	for (int i = 0; i < kSphereCount; ++i)
@@ -314,11 +314,11 @@ static void do_render(float crank_angle, float time, float start_time, float end
 	Ray camRay;
 	camRay.orig = s_camera.origin;
 	// 3x2 block temporal update one pixel per frame
-	float dv = 1.0f / LCD_ROWS;
-	float du = 1.0f / LCD_COLUMNS;
+	float dv = 1.0f / SCREEN_Y;
+	float du = 1.0f / SCREEN_X;
 	float vv = 1.0f - dv * 0.5f;
 	int t_frame_index = G.frame_count % 6;
-	for (int py = 0; py < LCD_ROWS; ++py, vv -= dv)
+	for (int py = 0; py < SCREEN_Y; ++py, vv -= dv)
 	{
 		int t_row_index = py & 1;
 		int col_offset = g_order_pattern_3x2[t_frame_index][t_row_index] - 1;
@@ -329,11 +329,11 @@ static void do_render(float crank_angle, float time, float start_time, float end
 		float3 rdir_rowstart = v3_add(s_camera.lowerLeftCorner, v3_mulfl(s_camera.vertical, vv));
 		rdir_rowstart = v3_sub(rdir_rowstart, s_camera.origin);
 
-		int pix_idx = py * LCD_COLUMNS;
+		int pix_idx = py * SCREEN_X;
 
 		uu += du * col_offset;
 		pix_idx += col_offset;
-		for (int px = col_offset; px < LCD_COLUMNS; px += 3, uu += du * 3, pix_idx += 3)
+		for (int px = col_offset; px < SCREEN_X; px += 3, uu += du * 3, pix_idx += 3)
 		{
 			float3 rdir = v3_add(rdir_rowstart, v3_mulfl(s_camera.horizontal, uu));
 			camRay.dir = v3_normalize(rdir);

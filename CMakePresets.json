@@ -28,16 +28,38 @@
             }
         },
         {
+            "name": "pdsim-debug",
+            "displayName": "x64 Debug (PlaydateSim)",
+            "inherits": "x64-debug",            
+            "cacheVariables": {
+                "BUILD_PLATFORM": "PLAYDATE_SIM"
+            }            
+        },
+        {
+            "name": "pdsim-release",
+            "displayName": "x64 Release (PlaydateSim)",
+            "inherits": "x64-release",
+            "cacheVariables": {
+                "BUILD_PLATFORM": "PLAYDATE_SIM"
+            }            
+        },
+        {
             "name": "pd-debug",
             "displayName": "x64 Debug (Playdate)",
-            "inherits": "x64-debug",
-            "toolchainFile": "$env{PLAYDATE_SDK_PATH}/C_API/buildsupport/arm.cmake"
+            "inherits": "x64-debug",            
+            "toolchainFile": "$env{PLAYDATE_SDK_PATH}/C_API/buildsupport/arm.cmake",
+            "cacheVariables": {
+                "BUILD_PLATFORM": "PLAYDATE"
+            }            
         },
         {
             "name": "pd-release",
             "displayName": "x64 Release (Playdate)",
             "inherits": "x64-release",
-            "toolchainFile": "$env{PLAYDATE_SDK_PATH}/C_API/buildsupport/arm.cmake"
+            "toolchainFile": "$env{PLAYDATE_SDK_PATH}/C_API/buildsupport/arm.cmake",
+            "cacheVariables": {
+                "BUILD_PLATFORM": "PLAYDATE"
+            }            
         }
     ]
 }
