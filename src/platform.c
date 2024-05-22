@@ -433,8 +433,15 @@ static void audio_sample_cb(float* buffer, int num_frames, int num_channels)
 	int decode_frames = num_frames;
 	if (decode_frames > s_current_music->wav.sample_count - s_current_music->decode_pos)
 		decode_frames = s_current_music->wav.sample_count - s_current_music->decode_pos;
+	if (decode_frames < 0)
+		decode_frames = 0;
 
 	wav_ima_adpcm_decode(buffer, s_current_music->decode_pos, decode_frames, s_current_music->wav.sample_data, &s_current_music->decode_state);
+
+	if (decode_frames < num_frames)
+	{
+		memset(buffer + decode_frames * num_channels, 0, (num_frames - decode_frames) * num_channels * sizeof(buffer[0]));
+	}
 	s_current_music->decode_pos += decode_frames;
 }
 
