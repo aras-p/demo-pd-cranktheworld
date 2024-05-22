@@ -370,19 +370,22 @@ PlatFileMusicPlayer* plat_audio_play_file(const char* file_path)
 
 bool plat_audio_is_playing(PlatFileMusicPlayer* music)
 {
-	//@TODO
-	return true;
+	return music->decode_pos < music->wav.sample_count;
 }
 
 float plat_audio_get_time(PlatFileMusicPlayer* music)
 {
-	//@TODO
-	return 0.5f;
+	return music->decode_pos / 44100.0f;
 }
 
 void plat_audio_set_time(PlatFileMusicPlayer* music, float t)
 {
-	//@TODO
+	int sample_pos = (int)(t * 44100.0f);
+	if (sample_pos < 0)
+		sample_pos = 0;
+	if (sample_pos > music->wav.sample_count)
+		sample_pos = music->wav.sample_count;
+	music->decode_pos = sample_pos;
 }
 
 static uint64_t sok_start_time;
@@ -397,12 +400,13 @@ void plat_time_reset()
 	sok_start_time = stm_now();
 }
 
+static PlatButtons s_but_current, s_but_pushed, s_but_released;
+
 void plat_input_get_buttons(PlatButtons* current, PlatButtons* pushed, PlatButtons* released)
 {
-	//@TODO
-	*current = 0;
-	*pushed = 0;
-	*released = 0;
+	*current = s_but_current;
+	*pushed = s_but_pushed;
+	*released = s_but_released;
 }
 
 float plat_input_get_crank_angle_rad()
@@ -535,6 +539,8 @@ static void sapp_frame(void)
 	sg_draw(0, 3, 1);
 	sg_end_pass();
 	sg_commit();
+
+	s_but_pushed = s_but_released = 0;
 }
 
 static void sapp_cleanup(void)
@@ -543,12 +549,71 @@ static void sapp_cleanup(void)
 	sg_shutdown();
 }
 
+static void sapp_onevent(const sapp_event* evt)
+{
+	if (evt->type == SAPP_EVENTTYPE_KEY_DOWN)
+	{
+		if (evt->key_code == SAPP_KEYCODE_LEFT) {
+			s_but_pushed |= kPlatButtonLeft;
+			s_but_current |= kPlatButtonLeft;
+		}
+		if (evt->key_code == SAPP_KEYCODE_RIGHT) {
+			s_but_pushed |= kPlatButtonRight;
+			s_but_current |= kPlatButtonRight;
+		}
+		if (evt->key_code == SAPP_KEYCODE_UP) {
+			s_but_pushed |= kPlatButtonUp;
+			s_but_current |= kPlatButtonUp;
+		}
+		if (evt->key_code == SAPP_KEYCODE_DOWN) {
+			s_but_pushed |= kPlatButtonDown;
+			s_but_current |= kPlatButtonDown;
+		}
+		if (evt->key_code == SAPP_KEYCODE_A) {
+			s_but_pushed |= kPlatButtonA;
+			s_but_current |= kPlatButtonA;
+		}
+		if (evt->key_code == SAPP_KEYCODE_B) {
+			s_but_pushed |= kPlatButtonB;
+			s_but_current |= kPlatButtonB;
+		}
+	}
+	if (evt->type == SAPP_EVENTTYPE_KEY_UP)
+	{
+		if (evt->key_code == SAPP_KEYCODE_LEFT) {
+			s_but_released |= kPlatButtonLeft;
+			s_but_current &= ~kPlatButtonLeft;
+		}
+		if (evt->key_code == SAPP_KEYCODE_RIGHT) {
+			s_but_released |= kPlatButtonRight;
+			s_but_current &= ~kPlatButtonRight;
+		}
+		if (evt->key_code == SAPP_KEYCODE_UP) {
+			s_but_released |= kPlatButtonUp;
+			s_but_current &= ~kPlatButtonUp;
+		}
+		if (evt->key_code == SAPP_KEYCODE_DOWN) {
+			s_but_released |= kPlatButtonDown;
+			s_but_current &= ~kPlatButtonDown;
+		}
+		if (evt->key_code == SAPP_KEYCODE_A) {
+			s_but_released |= kPlatButtonA;
+			s_but_current &= ~kPlatButtonA;
+		}
+		if (evt->key_code == SAPP_KEYCODE_B) {
+			s_but_released |= kPlatButtonB;
+			s_but_current &= ~kPlatButtonB;
+		}
+	}
+}
+
 sapp_desc sokol_main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
 	return (sapp_desc) {
 		.init_cb = sapp_init,
 		.frame_cb = sapp_frame,
 		.cleanup_cb = sapp_cleanup,
+		.event_cb = sapp_onevent,
 		.width = SCREEN_X * 2,
 		.height = SCREEN_Y * 2,
 		.window_title = "Everybody Wants to Crank the World",

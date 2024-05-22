@@ -77,6 +77,13 @@ if(IS_PLAYDATE_OR_SIM)
 else()
 	target_compile_definitions(${PLAYDATE_GAME_NAME} PRIVATE BUILD_PLATFORM_PC _CRT_SECURE_NO_WARNINGS)
 
+	# Enable debug symbols (RelWithDebInfo is not only that; it also turns on
+	# incremental linking, disables some inlining, etc. etc.)
+	if (CMAKE_BUILD_TYPE STREQUAL "Release")
+		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE /Zi)
+		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE /DEBUG /OPT:ICF /OPT:REF)
+	endif()
+
 	add_custom_command(
 		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy
