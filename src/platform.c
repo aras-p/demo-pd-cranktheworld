@@ -176,8 +176,10 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 // --------------------------------------------------------------------------
 #elif defined(BUILD_PLATFORM_PC)
 
+#if !defined(__APPLE__) // on Apple implementations are separate
 #define SOKOL_IMPL
 #define SOKOL_D3D11
+#endif
 #include "external/sokol/sokol_app.h"
 #include "external/sokol/sokol_gfx.h"
 #include "external/sokol/sokol_log.h"
@@ -310,7 +312,7 @@ void plat_file_close(PlatFile* file)
 static void plat_sys_log_error_impl(const char* fmt, va_list args)
 {
 	char buf[1000];
-	vsnprintf_s(buf, sizeof(buf), sizeof(buf)-1, fmt, args);
+	vsnprintf(buf, sizeof(buf), fmt, args);
 	slog_func("demo", 1, 0, buf, 0, "", NULL);
 }
 
@@ -351,7 +353,7 @@ PlatFileMusicPlayer* plat_audio_play_file(const char* file_path)
 	PlatFileMusicPlayer* res = (PlatFileMusicPlayer*)plat_malloc(sizeof(PlatFileMusicPlayer));
 	res->decode_pos = 0;
 	fseek(file, 0, SEEK_END);
-	res->file_size = ftell(file);
+	res->file_size = (int)ftell(file);
 	fseek(file, 0, SEEK_SET);
 	res->file = plat_malloc(res->file_size);
 	fread(res->file, 1, res->file_size, file);
@@ -446,20 +448,56 @@ static void audio_sample_cb(float* buffer, int num_frames, int num_channels)
 }
 
 static const char* kSokolVertexSource =
+#ifdef __APPLE__
+"#include <metal_stdlib>\n"
+"using namespace metal;\n"
+"struct v2f\n"
+"{\n"
+"    float2 uv;\n"
+"    float4 pos [[position]];\n"
+"};\n"
+"vertex v2f vs_main(uint vidx [[vertex_id]])\n"
+"{\n"
+"    v2f o;\n"
+"    float2 uv = float2(float((vidx << 1u) & 2u), float(vidx & 2u));\n"
+"    o.uv = uv;\n"
+"    o.pos = float4(uv * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);\n"
+"    return o;\n"
+"}\n";
+#else
 "struct v2f {\n"
 "  float2 uv : TEXCOORD0;\n"
 "  float4 pos : SV_Position;\n"
 "};\n"
-"v2f main(uint vidx: SV_VertexID) {\n"
+"v2f vs_main(uint vidx: SV_VertexID) {\n"
 "  v2f o;\n"
 "  float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
 "  o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "  o.uv = uv;\n"
 "  return o;\n"
 "}\n";
+#endif
+
 static const char* kSokolFragSource =
+#ifdef __APPLE__
+"#include <metal_stdlib>\n"
+"using namespace metal;\n"
+"struct v2f\n"
+"{\n"
+"    float2 uv;\n"
+"};\n"
+"fragment float4 fs_main(v2f i [[stage_in]], texture2d<float> tex [[texture(0)]])\n"
+"{\n"
+"    int x = int(i.uv.x * 400);\n"
+"    int y = int(i.uv.y * 240);\n"
+"    uint val = uint(tex.read(uint2(x>>3, y), 0).x * 255.5);\n"
+"    uint mask = 1 << (7 - (x & 7));\n"
+"    float4 col = float4(val & mask ? 0.9 : 0.1);\n"
+"    return col;\n"
+"}\n";
+#else
 "Texture2D<float4> tex : register(t0);\n"
-"float4 main(float2 uv : TEXCOORD0) : SV_Target0 {\n"
+"float4 fs_main(float2 uv : TEXCOORD0) : SV_Target0 {\n"
 "  int x = int(uv.x * 400);\n"
 "  int y = int(uv.y * 240);\n"
 "  uint val = uint(tex.Load(int3(x>>3, y, 0)).r * 255.5);\n"
@@ -467,6 +505,7 @@ static const char* kSokolFragSource =
 "  float4 col = val & mask ? 0.9 : 0.1;\n"
 "  return col;\n"
 "}\n";
+#endif
 
 static sg_pass_action sok_pass;
 static sg_shader sok_shader;
@@ -498,11 +537,13 @@ static void sapp_init(void)
 	});
 	sok_shader = sg_make_shader(&(sg_shader_desc) {
 		.vs.source = kSokolVertexSource,
+        .vs.entry = "vs_main",
 		.fs = {
 			.images[0].used = true,
 			.samplers[0].used = true,
 			.image_sampler_pairs[0] = { .used = true, .image_slot = 0, .sampler_slot = 0 },
 			.source = kSokolFragSource,
+            .entry = "fs_main",
 		},
 	});
 	sok_pipe = sg_make_pipeline(&(sg_pipeline_desc) {
