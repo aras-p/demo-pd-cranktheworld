@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Unlicense
 
-#pragma once
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -127,7 +125,9 @@ void wav_ima_adpcm_decode(float* __restrict output, int sample_pos, int sample_c
 
 		// copy the needed chunk of decoded block into output
 		int pos_in_block = sample_pos - block_index * state->samples_per_block;
-		int samples_to_copy = min(sample_count, state->samples_per_block - pos_in_block);
+		int samples_to_copy = state->samples_per_block - pos_in_block;
+		if (samples_to_copy > sample_count)
+			samples_to_copy = sample_count;
 		memcpy(output, state->block + pos_in_block, samples_to_copy * sizeof(float));
 
 		// advance
