@@ -176,9 +176,13 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 // --------------------------------------------------------------------------
 #elif defined(BUILD_PLATFORM_PC)
 
-#if !defined(__APPLE__) // on Apple implementations are separate
 #define SOKOL_IMPL
+#if defined(__APPLE__)
+#define SOKOL_METAL
+#elif defined(_WIN32)
 #define SOKOL_D3D11
+#else
+#define SOKOL_GLCORE
 #endif
 #include "external/sokol/sokol_app.h"
 #include "external/sokol/sokol_gfx.h"
@@ -312,7 +316,7 @@ void plat_gfx_draw_stats(float par1)
         for (int x = 0; x < rectx / 8; ++x)
             row[x] = 0xFF;
     }
-    
+
     // draw text
     char buf[100];
     snprintf(buf, sizeof(buf), "t %i", (int)par1);
@@ -323,7 +327,7 @@ static char s_data_path[1000];
 
 PlatBitmap* plat_gfx_load_bitmap(const char* file_path, const char** outerr)
 {
-    
+
 	*outerr = "";
 
 	char path[1000];

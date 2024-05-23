@@ -63,10 +63,6 @@ set (DEMO_SOURCES
 	src/external/aheasing/easing.h
 )
 
-if (APPLE AND NOT IS_PLAYDATE_OR_SIM)
-	list(APPEND DEMO_SOURCES src/sokol_impl.m)
-endif()
-
 if (TOOLCHAIN STREQUAL "armgcc")
 	add_executable(${PLAYDATE_GAME_DEVICE} ${DEMO_SOURCES})
 	# leave assembly files in build artifacts
@@ -105,6 +101,7 @@ else()
 	endif()
 
 	if(APPLE)
+		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -x objective-c)
   		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE
   			"-framework Cocoa"
   			"-framework Metal"
@@ -115,7 +112,7 @@ else()
     else()
         set(DATA_DIR "data")
 	endif()
- 
+
 	add_custom_command(
 		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E make_directory
