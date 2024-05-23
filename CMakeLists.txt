@@ -80,9 +80,10 @@ elseif(APPLE)
     set_target_properties(${PLAYDATE_GAME_NAME} PROPERTIES
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER org.nesnausk.cranktheworld
-        MACOSX_BUNDLE_BUNDLE_NAME CrankThe
+        MACOSX_BUNDLE_BUNDLE_NAME "Crank The World"
         MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+        MACOSX_BUNDLE_ICON_FILE "icon.png"
     )
     #message(INFO "Foo" "$<TARGET_FILE_DIR:${PLAYDATE_GAME_NAME}>")
 else()
