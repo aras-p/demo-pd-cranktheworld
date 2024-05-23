@@ -117,7 +117,7 @@ else()
 
 	if(APPLE)
 		set(DATA_DIR "../Resources")
-    else()
+	else()
 		set(DATA_DIR "data")
 	endif()
 
