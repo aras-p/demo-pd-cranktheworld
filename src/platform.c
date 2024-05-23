@@ -590,7 +590,7 @@ static const char* kSokolFragSource =
 "out vec4 frag_color;\n"
 "void main() {\n"
 "  int x = int(uv.x * 400);\n"
-"  int y = int(uv.y * 200);\n"
+"  int y = int(uv.y * 240);\n"
 "  float pix = texelFetch(tex, ivec2(x>>3, y), 0).x;\n"
 "  uint val = uint(pix * 255.5);\n"
 "  uint mask = 1 << (7 - (x & 7));\n"
