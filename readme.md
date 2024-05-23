@@ -66,7 +66,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
-On Linux, you might need to have these installed: `libglu1-mesa-dev', 'mesa-common-dev', 'xorg-dev', 'libasound-dev`.
+On Linux, you might need to have these installed: `libglu1-mesa-dev`, `mesa-common-dev`, `xorg-dev`, `libasound-dev`.
 
 
 ### License
