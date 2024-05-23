@@ -100,14 +100,22 @@ else()
 		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE /DEBUG /OPT:ICF /OPT:REF)
 	endif()
 
-	if(APPLE)
+	if (APPLE)
 		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -x objective-c)
-  		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE
-  			"-framework Cocoa"
-  			"-framework Metal"
-  			"-framework MetalKit"
-  			"-framework AudioToolbox"
-  			"-framework QuartzCore")
+		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE
+			"-framework Cocoa"
+			"-framework Metal"
+			"-framework MetalKit"
+			"-framework AudioToolbox"
+			"-framework QuartzCore")
+	elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+		set(THREADS_PREFER_PTHREADS_FLAG ON)
+		find_package(Threads REQUIRED)
+		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -Wno-format-truncation)
+		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
+	endif()
+
+	if(APPLE)
         set(DATA_DIR "../Resources")
     else()
         set(DATA_DIR "data")
