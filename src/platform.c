@@ -182,7 +182,6 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #elif defined(_WIN32)
 #define SOKOL_D3D11
 #else
-// FIXME: not useful yet, since GL shaders are missing
 #define SOKOL_GLCORE
 #endif
 #include "external/sokol/sokol_app.h"
@@ -531,6 +530,7 @@ static void audio_sample_cb(float* buffer, int num_frames, int num_channels)
 
 static const char* kSokolVertexSource =
 #if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
+// HLSL / Metal
 #ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
@@ -559,6 +559,7 @@ static const char* kSokolVertexSource =
 
 static const char* kSokolFragSource =
 #if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
+// HLSL / Metal
 #ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"

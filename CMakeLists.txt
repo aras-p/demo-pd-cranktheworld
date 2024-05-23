@@ -81,7 +81,6 @@ elseif(APPLE)
 		MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
 		MACOSX_BUNDLE_ICON_FILE "icon.png"
 	)
-	#message(INFO "Foo" "$<TARGET_FILE_DIR:${PLAYDATE_GAME_NAME}>")
 else()
 	add_executable(${PLAYDATE_GAME_NAME} ${DEMO_SOURCES})
 endif()
@@ -95,7 +94,7 @@ else()
 
 	# Enable debug symbols (RelWithDebInfo is not only that; it also turns on
 	# incremental linking, disables some inlining, etc. etc.)
-	if (CMAKE_BUILD_TYPE STREQUAL "Release")
+	if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MSVC)
 		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE /Zi)
 		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE /DEBUG /OPT:ICF /OPT:REF)
 	endif()

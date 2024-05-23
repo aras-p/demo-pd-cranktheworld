@@ -53,12 +53,21 @@ Blog post with some more details about development: https://aras-p.info/blog/202
 The demo can be built for several "platforms":
 - Playdate device itself,
 - Playdate SDK simulator,
-- Regular Windows or Mac binary. This one does not require having Playdate or the SDK for it.
+- Regular PC (Windows/Mac/Linux) binary. This one does not require having Playdate or the SDK for it.
 
 On Windows / Visual Studio, easiest is opening the folder directly from within VS. Then pick one of the configuration configs and build.
 The actual Playdate (and simulator) builds I only tried on Windows. They may or might not work when done on other host platforms.
 
-On Mac, I used Xcode: make a `build` subfolder, and do `cmake -G Xcode ..` from within it.
+For PC build, the usual cmake way should work, i.e.
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+On Linux, you might need to have these installed: `libglu1-mesa-dev', 'mesa-common-dev', 'xorg-dev', 'libasound-dev`.
+
 
 ### License
 
