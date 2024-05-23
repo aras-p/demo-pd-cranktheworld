@@ -1,6 +1,7 @@
 ﻿/build/*
 /build_dev/*
 .vs/*
+.vscode/
 /*.pdx
 pdex.dll
 pdex.elf
