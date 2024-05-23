@@ -530,9 +530,8 @@ static void audio_sample_cb(float* buffer, int num_frames, int num_channels)
 }
 
 static const char* kSokolVertexSource =
-// FIXME: replace those defines with SOKOL_*
-#if defined(__APPLE__) || defined(_WIN32)
-#ifdef __APPLE__
+#if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
+#ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
 "struct v2f { float2 uv; float4 pos [[position]]; };\n"
@@ -559,8 +558,8 @@ static const char* kSokolVertexSource =
 #endif
 
 static const char* kSokolFragSource =
-#if defined(__APPLE__) || defined(_WIN32)
-#ifdef __APPLE__
+#if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
+#ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
 "struct v2f { float2 uv; };\n"
@@ -573,7 +572,7 @@ static const char* kSokolFragSource =
 "{\n"
 "  int x = int(i.uv.x * 400);\n"
 "  int y = int(i.uv.y * 240);\n"
-#ifdef __APPLE__
+#ifdef SOKOL_METAL
 "  float pix = tex.read(uint2(x>>3, y), 0).x;\n"
 #else
 "  float pix = tex.Load(int3(x>>3, y, 0)).x;\n"
