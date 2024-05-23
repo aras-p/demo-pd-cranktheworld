@@ -454,61 +454,44 @@ static const char* kSokolVertexSource =
 #ifdef __APPLE__
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
-"struct v2f\n"
-"{\n"
-"    float2 uv;\n"
-"    float4 pos [[position]];\n"
-"};\n"
+"struct v2f { float2 uv; float4 pos [[position]]; };\n"
 "vertex v2f vs_main(uint vidx [[vertex_id]])\n"
+#else
+"struct v2f { float2 uv : TEXCOORD0; float4 pos : SV_Position; };\n"
+"v2f vs_main(uint vidx: SV_VertexID)\n"
+#endif
 "{\n"
 "    v2f o;\n"
-"    float2 uv = float2(float((vidx << 1u) & 2u), float(vidx & 2u));\n"
+"    float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
 "    o.uv = uv;\n"
-"    o.pos = float4(uv * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);\n"
+"    o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "    return o;\n"
 "}\n";
-#else
-"struct v2f {\n"
-"  float2 uv : TEXCOORD0;\n"
-"  float4 pos : SV_Position;\n"
-"};\n"
-"v2f vs_main(uint vidx: SV_VertexID) {\n"
-"  v2f o;\n"
-"  float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
-"  o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
-"  o.uv = uv;\n"
-"  return o;\n"
-"}\n";
-#endif
 
 static const char* kSokolFragSource =
 #ifdef __APPLE__
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
-"struct v2f\n"
-"{\n"
-"    float2 uv;\n"
-"};\n"
+"struct v2f { float2 uv; };\n"
 "fragment float4 fs_main(v2f i [[stage_in]], texture2d<float> tex [[texture(0)]])\n"
-"{\n"
-"    int x = int(i.uv.x * 400);\n"
-"    int y = int(i.uv.y * 240);\n"
-"    uint val = uint(tex.read(uint2(x>>3, y), 0).x * 255.5);\n"
-"    uint mask = 1 << (7 - (x & 7));\n"
-"    float4 col = float4(val & mask ? 0.9 : 0.1);\n"
-"    return col;\n"
-"}\n";
 #else
+"struct v2f { float2 uv : TEXCOORD0; };\n"
 "Texture2D<float4> tex : register(t0);\n"
-"float4 fs_main(float2 uv : TEXCOORD0) : SV_Target0 {\n"
-"  int x = int(uv.x * 400);\n"
-"  int y = int(uv.y * 240);\n"
-"  uint val = uint(tex.Load(int3(x>>3, y, 0)).r * 255.5);\n"
+"float4 fs_main(v2f i) : SV_Target0\n"
+#endif
+"{\n"
+"  int x = int(i.uv.x * 400);\n"
+"  int y = int(i.uv.y * 240);\n"
+#ifdef __APPLE__
+"  float pix = tex.read(uint2(x>>3, y), 0).x;\n"
+#else
+"  float pix = tex.Load(int3(x>>3, y, 0)).x;\n"
+#endif
+"  uint val = uint(pix * 255.5);\n"
 "  uint mask = 1 << (7 - (x & 7));\n"
-"  float4 col = val & mask ? 0.9 : 0.1;\n"
+"  float4 col = val & mask ? float4(0.694, 0.686, 0.659, 1.0) : float4(0.192, 0.184, 0.157, 1.0);\n"
 "  return col;\n"
 "}\n";
-#endif
 
 static sg_pass_action sok_pass;
 static sg_shader sok_shader;
