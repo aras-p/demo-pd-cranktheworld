@@ -72,16 +72,16 @@ elseif(IS_PLAYDATE_OR_SIM)
 	add_library(${PLAYDATE_GAME_NAME} SHARED ${DEMO_SOURCES})
 	target_compile_definitions(${PLAYDATE_GAME_NAME} PRIVATE BUILD_PLATFORM_PLAYDATE)
 elseif(APPLE)
-    add_executable(${PLAYDATE_GAME_NAME} MACOSX_BUNDLE ${DEMO_SOURCES})
-    set_target_properties(${PLAYDATE_GAME_NAME} PROPERTIES
-        BUNDLE True
-        MACOSX_BUNDLE_GUI_IDENTIFIER org.nesnausk.cranktheworld
-        MACOSX_BUNDLE_BUNDLE_NAME "Crank The World"
-        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
-        MACOSX_BUNDLE_ICON_FILE "icon.png"
-    )
-    #message(INFO "Foo" "$<TARGET_FILE_DIR:${PLAYDATE_GAME_NAME}>")
+	add_executable(${PLAYDATE_GAME_NAME} MACOSX_BUNDLE ${DEMO_SOURCES})
+	set_target_properties(${PLAYDATE_GAME_NAME} PROPERTIES
+		BUNDLE True
+		MACOSX_BUNDLE_GUI_IDENTIFIER org.nesnausk.cranktheworld
+		MACOSX_BUNDLE_BUNDLE_NAME "Crank The World"
+		MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+		MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+		MACOSX_BUNDLE_ICON_FILE "icon.png"
+	)
+	#message(INFO "Foo" "$<TARGET_FILE_DIR:${PLAYDATE_GAME_NAME}>")
 else()
 	add_executable(${PLAYDATE_GAME_NAME} ${DEMO_SOURCES})
 endif()
@@ -100,17 +100,25 @@ else()
 		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE /DEBUG /OPT:ICF /OPT:REF)
 	endif()
 
-	if(APPLE)
+	if (APPLE)
 		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -x objective-c)
-  		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE
-  			"-framework Cocoa"
-  			"-framework Metal"
-  			"-framework MetalKit"
-  			"-framework AudioToolbox"
-  			"-framework QuartzCore")
-        set(DATA_DIR "../Resources")
-    else()
-        set(DATA_DIR "data")
+		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE
+			"-framework Cocoa"
+			"-framework Metal"
+			"-framework MetalKit"
+			"-framework AudioToolbox"
+			"-framework QuartzCore")
+	elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+		set(THREADS_PREFER_PTHREADS_FLAG ON)
+		find_package(Threads REQUIRED)
+		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -Wno-format-truncation)
+		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
+	endif()
+
+	if(APPLE)
+		set(DATA_DIR "../Resources")
+	else()
+		set(DATA_DIR "data")
 	endif()
 
 	add_custom_command(

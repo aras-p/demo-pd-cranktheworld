@@ -530,7 +530,8 @@ static void audio_sample_cb(float* buffer, int num_frames, int num_channels)
 }
 
 static const char* kSokolVertexSource =
-#ifdef __APPLE__
+#if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
+#ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
 "struct v2f { float2 uv; float4 pos [[position]]; };\n"
@@ -546,9 +547,19 @@ static const char* kSokolVertexSource =
 "    o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "    return o;\n"
 "}\n";
+#else
+// GLSL
+"#version 410\n"
+"out vec2 uv;\n"
+"void main() {\n"
+"  uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n"
+"  gl_Position = vec4(uv * vec2(2, -2) + vec2(-1, 1), 0, 1);\n"
+"}";
+#endif
 
 static const char* kSokolFragSource =
-#ifdef __APPLE__
+#if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
+#ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
 "struct v2f { float2 uv; };\n"
@@ -561,7 +572,7 @@ static const char* kSokolFragSource =
 "{\n"
 "  int x = int(i.uv.x * 400);\n"
 "  int y = int(i.uv.y * 240);\n"
-#ifdef __APPLE__
+#ifdef SOKOL_METAL
 "  float pix = tex.read(uint2(x>>3, y), 0).x;\n"
 #else
 "  float pix = tex.Load(int3(x>>3, y, 0)).x;\n"
@@ -571,6 +582,21 @@ static const char* kSokolFragSource =
 "  float4 col = val & mask ? float4(0.694, 0.686, 0.659, 1.0) : float4(0.192, 0.184, 0.157, 1.0);\n"
 "  return col;\n"
 "}\n";
+#else
+// GLSL
+"#version 410\n"
+"uniform sampler2D tex;\n"
+"in vec2 uv;\n"
+"out vec4 frag_color;\n"
+"void main() {\n"
+"  int x = int(uv.x * 400);\n"
+"  int y = int(uv.y * 240);\n"
+"  float pix = texelFetch(tex, ivec2(x>>3, y), 0).x;\n"
+"  uint val = uint(pix * 255.5);\n"
+"  uint mask = 1 << (7 - (x & 7));\n"
+"  frag_color = ((val & mask) != 0) ? vec4(0.694, 0.686, 0.659, 1.0) : vec4(0.192, 0.184, 0.157, 1.0);\n"
+"}\n";
+#endif
 
 static sg_pass_action sok_pass;
 static sg_shader sok_shader;
@@ -606,7 +632,7 @@ static void sapp_init(void)
 		.fs = {
 			.images[0].used = true,
 			.samplers[0].used = true,
-			.image_sampler_pairs[0] = { .used = true, .image_slot = 0, .sampler_slot = 0 },
+			.image_sampler_pairs[0] = { .used = true, .glsl_name = "tex", .image_slot = 0, .sampler_slot = 0 },
 			.source = kSokolFragSource,
             .entry = "fs_main",
 		},
