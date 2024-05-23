@@ -72,6 +72,6 @@ On Linux, you might need to have these installed: `libglu1-mesa-dev`, `mesa-comm
 ### License
 
 Everything I wrote myself is Unlicense / Public Domain. However some 3rd party libraries are used too:
-- (only on Windows/Mac build): [**Sokol**](https://github.com/floooh/sokol): sokol_app, sokol_audio, sokol_gfx, sokol_time. zlib/libpng license.
-- (only on Windows/Mac build): [**stb_image.h**](https://github.com/nothings/stb/blob/master/stb_image.h): for loading PNG files. Public domain.
+- (only on PC): [**Sokol**](https://github.com/floooh/sokol): sokol_app, sokol_audio, sokol_gfx, sokol_time. zlib/libpng license.
+- (only on PC): [**stb_image.h**](https://github.com/nothings/stb/blob/master/stb_image.h): for loading PNG files. Public domain.
 - [**AHEasing**](https://github.com/warrenm/AHEasing). Public domain.
