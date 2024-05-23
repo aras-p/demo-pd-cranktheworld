@@ -182,6 +182,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #elif defined(_WIN32)
 #define SOKOL_D3D11
 #else
+// FIXME: not useful yet, since GL shaders are missing
 #define SOKOL_GLCORE
 #endif
 #include "external/sokol/sokol_app.h"
