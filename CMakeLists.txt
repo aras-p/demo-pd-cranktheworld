@@ -95,8 +95,12 @@ else()
 	# Enable debug symbols (RelWithDebInfo is not only that; it also turns on
 	# incremental linking, disables some inlining, etc. etc.)
 	if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MSVC)
-		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE /Zi)
+		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE
+			/Zi
+			/GS- # disable buffer security check
+		)
 		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE /DEBUG /OPT:ICF /OPT:REF)
+		set_property(TARGET ${PLAYDATE_GAME_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 	endif()
 
 	if (APPLE)

@@ -63,7 +63,7 @@ For PC build, the usual cmake way should work, i.e.
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
+cmake --build . --config Release
 ```
 
 On Linux, you might need to have these installed: `libglu1-mesa-dev`, `mesa-common-dev`, `xorg-dev`, `libasound-dev`.
