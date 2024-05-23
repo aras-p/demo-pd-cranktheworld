@@ -730,24 +730,12 @@ static void sapp_onevent(const sapp_event* evt)
 	}
 }
 
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
-#include <libgen.h>
-#endif
-
 sapp_desc sokol_main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
 
-    // figure out where is the data folder
+	// figure out where is the data folder
 #ifdef __APPLE__
-    char exe_path[1000];
-    uint32_t exe_path_size = sizeof(exe_path);
-    if (_NSGetExecutablePath(exe_path, &exe_path_size) != 0)
-        exit(1);
-    char exe_real_path[1000];
-    realpath(exe_path, exe_real_path);
-    char* exe_dir = dirname(exe_real_path);
-    snprintf(s_data_path, sizeof(s_data_path), "%s/../Resources", exe_dir);
+	snprintf(s_data_path, sizeof(s_data_path), "%s", [[NSBundle mainBundle].resourcePath UTF8String]);
 #else
     strncpy(s_data_path, "data", sizeof(s_data_path));
 #endif
