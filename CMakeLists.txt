@@ -14,12 +14,12 @@ if(("${BUILD_PLATFORM}" STREQUAL "PLAYDATE") OR ("${BUILD_PLATFORM}" STREQUAL "P
 else()
 	set(IS_PLAYDATE_OR_SIM FALSE)
 endif()
-if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 	set(EMSCRIPTEN TRUE)
 else()
 	set(EMSCRIPTEN FALSE)
 endif()
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(LINUX TRUE)
 else()
 	set(LINUX FALSE)
@@ -128,15 +128,16 @@ else()
 		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
 	elseif (EMSCRIPTEN)
 		set(CMAKE_EXECUTABLE_SUFFIX .html)
-		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -flto)
 		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE
-			-flto
 			-sUSE_WEBGL2=1
 			-sALLOW_MEMORY_GROWTH=1
 			-sMALLOC=emmalloc
 			--embed-file data
-			--shell-file=../web/shell.html
-			--closure 1)
+			--shell-file=../web/shell.html)
+		if (CMAKE_BUILD_TYPE STREQUAL "Release")
+			target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -flto)
+			target_link_options(${PLAYDATE_GAME_NAME} PRIVATE -flto --closure 1)
+		endif()
 	endif()
 
 	if(APPLE)
