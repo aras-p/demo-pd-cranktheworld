@@ -128,7 +128,10 @@ else()
 		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
 	elseif (EMSCRIPTEN)
 		set(CMAKE_EXECUTABLE_SUFFIX .html)
-		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE -sUSE_WEBGL2=1)
+		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE
+			-sUSE_WEBGL2=1
+			-sALLOW_MEMORY_GROWTH=1
+			--embed-file data)
 	endif()
 
 	if(APPLE)
@@ -138,12 +141,12 @@ else()
 	endif()
 
 	add_custom_command(
-		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
+		TARGET ${PLAYDATE_GAME_NAME} PRE_LINK
 		COMMAND ${CMAKE_COMMAND} -E make_directory
 		$<TARGET_FILE_DIR:${PLAYDATE_GAME_NAME}>/${DATA_DIR}
 	)
 	add_custom_command(
-		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
+		TARGET ${PLAYDATE_GAME_NAME} PRE_LINK
 		COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/sys_img/icon.png
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/music.wav
