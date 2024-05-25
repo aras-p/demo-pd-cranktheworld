@@ -536,16 +536,18 @@ static const char* kSokolVertexSource =
 #ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
+"struct frame_uni { float boxx; float boxy; };\n"
 "struct v2f { float2 uv; float4 pos [[position]]; };\n"
-"vertex v2f vs_main(uint vidx [[vertex_id]])\n"
+"vertex v2f vs_main(uint vidx [[vertex_id]], constant frame_uni& uni [[buffer(0)]])\n"
 #else
+"cbuffer uni : register(b0) { float boxx; float boxy; };\n"
 "struct v2f { float2 uv : TEXCOORD0; float4 pos : SV_Position; };\n"
 "v2f vs_main(uint vidx: SV_VertexID)\n"
 #endif
 "{\n"
 "    v2f o;\n"
 "    float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
-"    o.uv = uv;\n"
+"    o.uv = (uv - 0.5) * float2(uni.boxx, uni.boxy) + 0.5;\n"
 "    o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "    return o;\n"
 "}\n";
@@ -555,10 +557,12 @@ static const char* kSokolVertexSource =
 #else
 "#version 300 es\n"
 #endif
+"uniform vec2 box;\n"
 "out vec2 uv;\n"
 "void main() {\n"
 "  uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n"
 "  gl_Position = vec4(uv * vec2(2, -2) + vec2(-1, 1), 0, 1);\n"
+"  uv = (uv - vec2(0.5)) * box + vec2(0.5);\n"
 "}";
 #endif
 
@@ -586,6 +590,7 @@ static const char* kSokolFragSource =
 "  uint val = uint(pix * 255.5);\n"
 "  uint mask = 1 << (7 - (x & 7));\n"
 "  float4 col = val & mask ? float4(0.694, 0.686, 0.659, 1.0) : float4(0.192, 0.184, 0.157, 1.0);\n"
+"  if (any(i.uv != saturate(i.uv))) col.rgb = 0.0;\n"
 "  return col;\n"
 "}\n";
 #else
@@ -606,6 +611,7 @@ static const char* kSokolFragSource =
 "  uint val = uint(pix * 255.5);\n"
 "  uint mask = uint(1 << (7 - (int(x) & 7)));\n"
 "  frag_color = ((val & mask) != 0u) ? vec4(0.694, 0.686, 0.659, 1.0) : vec4(0.192, 0.184, 0.157, 1.0);\n"
+"  if (any(notEqual(uv, clamp(uv, 0.0, 1.0)))) frag_color.rgb = vec3(0.0);\n"
 "}\n";
 #endif
 
@@ -614,6 +620,11 @@ static sg_shader sok_shader;
 static sg_pipeline sok_pipe;
 static sg_image sok_image;
 static sg_sampler sok_sampler;
+
+typedef struct frame_uniforms {
+    float boxx;
+    float boxy;
+} frame_uniforms;
 
 static void sapp_init(void)
 {
@@ -639,6 +650,10 @@ static void sapp_init(void)
 	});
 	sok_shader = sg_make_shader(&(sg_shader_desc) {
 		.vs.source = kSokolVertexSource,
+        .vs.uniform_blocks[0].size = sizeof(frame_uniforms),
+        .vs.uniform_blocks[0].uniforms = {
+            [0] = { .name = "box", .type = SG_UNIFORMTYPE_FLOAT2 },
+        },
         .vs.entry = "vs_main",
 		.fs = {
 			.images[0].used = true,
@@ -694,9 +709,19 @@ static void sapp_frame(void)
 			.samplers[0] = sok_sampler,
 		},
 	};
+    float sx = sapp_widthf();
+    float sy = sapp_heightf();
+    float aspect = sx / sy;
+    float normal = 400.0f / 240.0f;
+    
+    frame_uniforms uni = {
+        .boxx = aspect > normal ? aspect / normal : 1.0f,
+        .boxy = aspect > normal ? 1.0f : normal / aspect
+    };
 
 	sg_apply_pipeline(sok_pipe);
 	sg_apply_bindings(&bind);
+    sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &SG_RANGE(uni));
 	sg_draw(0, 3, 1);
 	sg_end_pass();
 	sg_commit();
