@@ -101,10 +101,6 @@ Finally run the build result via
 ../emsdk/upstream/emscripten/emrun Nesnausk_CrankTheWorld.html
 ```
 
-You may need to click/tap into the browser for the audio or even whole demo
-to start (more recent Safari versions seem to freeze the whole application
-until the audio context is resumed via a click).
-
 ### License
 
 Everything I wrote myself is Unlicense / Public Domain. However some 3rd party libraries are used too:
