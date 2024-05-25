@@ -1,0 +1,30 @@
+# manually triggered script to build and deploy the web version to github pages
+name: Deploy Web Demo
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: prepare
+        run: |
+          git clone https://github.com/emscripten-core/emsdk
+          cd emsdk
+          ./emsdk install 3.1.60
+          ./emsdk activate 3.1.60
+          cd ..
+      - name: build
+        run: |
+          mkdir build
+          cd build
+          cmake --preset emscripten-release ..
+          cmake --build .
+          mkdir web
+          cp *.wasm *.html *.js web
+      - name: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webpage
+          path: build/web
+          retention-days: 1
