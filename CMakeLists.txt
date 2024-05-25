@@ -14,6 +14,16 @@ if(("${BUILD_PLATFORM}" STREQUAL "PLAYDATE") OR ("${BUILD_PLATFORM}" STREQUAL "P
 else()
 	set(IS_PLAYDATE_OR_SIM FALSE)
 endif()
+if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+	set(EMSCRIPTEN TRUE)
+else()
+	set(EMSCRIPTEN FALSE)
+endif()
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	set(LINUX TRUE)
+else()
+	set(LINUX FALSE)
+endif()
 
 # Figure out Playdate SDK location
 if (IS_PLAYDATE_OR_SIM)
@@ -111,11 +121,23 @@ else()
 			"-framework MetalKit"
 			"-framework AudioToolbox"
 			"-framework QuartzCore")
-	elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	elseif (LINUX)
 		set(THREADS_PREFER_PTHREADS_FLAG ON)
 		find_package(Threads REQUIRED)
 		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -Wno-format-truncation)
 		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
+	elseif (EMSCRIPTEN)
+		set(CMAKE_EXECUTABLE_SUFFIX .html)
+		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE
+			-sUSE_WEBGL2=1
+			-sALLOW_MEMORY_GROWTH=1
+			-sMALLOC=emmalloc
+			--embed-file data
+			--shell-file=../web/shell.html)
+		if (CMAKE_BUILD_TYPE STREQUAL "Release")
+			target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -flto)
+			target_link_options(${PLAYDATE_GAME_NAME} PRIVATE -flto --closure 1)
+		endif()
 	endif()
 
 	if(APPLE)
@@ -125,12 +147,12 @@ else()
 	endif()
 
 	add_custom_command(
-		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
+		TARGET ${PLAYDATE_GAME_NAME} PRE_LINK
 		COMMAND ${CMAKE_COMMAND} -E make_directory
 		$<TARGET_FILE_DIR:${PLAYDATE_GAME_NAME}>/${DATA_DIR}
 	)
 	add_custom_command(
-		TARGET ${PLAYDATE_GAME_NAME} POST_BUILD
+		TARGET ${PLAYDATE_GAME_NAME} PRE_LINK
 		COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/sys_img/icon.png
 		${CMAKE_CURRENT_SOURCE_DIR}/Source/music.wav
