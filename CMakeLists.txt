@@ -14,6 +14,16 @@ if(("${BUILD_PLATFORM}" STREQUAL "PLAYDATE") OR ("${BUILD_PLATFORM}" STREQUAL "P
 else()
 	set(IS_PLAYDATE_OR_SIM FALSE)
 endif()
+if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+	set(EMSCRIPTEN TRUE)
+else()
+	set(EMSCRIPTEN FALSE)
+endif()
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	set(LINUX TRUE)
+else()
+	set(LINUX FALSE)
+endif()
 
 # Figure out Playdate SDK location
 if (IS_PLAYDATE_OR_SIM)
@@ -111,11 +121,14 @@ else()
 			"-framework MetalKit"
 			"-framework AudioToolbox"
 			"-framework QuartzCore")
-	elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	elseif (LINUX)
 		set(THREADS_PREFER_PTHREADS_FLAG ON)
 		find_package(Threads REQUIRED)
 		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -Wno-format-truncation)
 		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
+	elseif (EMSCRIPTEN)
+		set(CMAKE_EXECUTABLE_SUFFIX .html)
+		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE -sUSE_WEBGL2=1)
 	endif()
 
 	if(APPLE)

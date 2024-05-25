@@ -30,10 +30,10 @@
         {
             "name": "pdsim-debug",
             "displayName": "x64 Debug (PlaydateSim)",
-            "inherits": "x64-debug",            
+            "inherits": "x64-debug",
             "cacheVariables": {
                 "BUILD_PLATFORM": "PLAYDATE_SIM"
-            }            
+            }
         },
         {
             "name": "pdsim-release",
@@ -41,16 +41,16 @@
             "inherits": "x64-release",
             "cacheVariables": {
                 "BUILD_PLATFORM": "PLAYDATE_SIM"
-            }            
+            }
         },
         {
             "name": "pd-debug",
             "displayName": "x64 Debug (Playdate)",
-            "inherits": "x64-debug",            
+            "inherits": "x64-debug",
             "toolchainFile": "$env{PLAYDATE_SDK_PATH}/C_API/buildsupport/arm.cmake",
             "cacheVariables": {
                 "BUILD_PLATFORM": "PLAYDATE"
-            }            
+            }
         },
         {
             "name": "pd-release",
@@ -59,7 +59,28 @@
             "toolchainFile": "$env{PLAYDATE_SDK_PATH}/C_API/buildsupport/arm.cmake",
             "cacheVariables": {
                 "BUILD_PLATFORM": "PLAYDATE"
-            }            
+            }
+        },
+        {
+            "name": "emscripten-base",
+            "hidden": true,
+            "toolchainFile": "emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+        },
+        {
+            "name": "emscripten-debug",
+            "displayName": "Emscripten Debug",
+            "inherits": "emscripten-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "emscripten-release",
+            "displayName": "Emscripten Release",
+            "inherits": "emscripten-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
         }
     ]
 }
