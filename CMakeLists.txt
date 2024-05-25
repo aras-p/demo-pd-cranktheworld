@@ -128,10 +128,15 @@ else()
 		target_link_libraries(${PLAYDATE_GAME_NAME} PRIVATE X11 Xi Xcursor GL asound dl m Threads::Threads)
 	elseif (EMSCRIPTEN)
 		set(CMAKE_EXECUTABLE_SUFFIX .html)
+		target_compile_options(${PLAYDATE_GAME_NAME} PRIVATE -flto)
 		target_link_options(${PLAYDATE_GAME_NAME} PRIVATE
+			-flto
 			-sUSE_WEBGL2=1
 			-sALLOW_MEMORY_GROWTH=1
-			--embed-file data)
+			-sMALLOC=emmalloc
+			--embed-file data
+			--shell-file=../web/shell.html
+			--closure 1)
 	endif()
 
 	if(APPLE)
