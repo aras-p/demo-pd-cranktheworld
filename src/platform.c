@@ -676,6 +676,14 @@ static void sapp_frame(void)
 {
 	app_update();
 
+	#if defined(__EMSCRIPTEN__)
+	if (saudio_suspended()) {
+		if (0 == (sapp_frame_count() & (1<<5))) {
+			draw_text("click/tap to start", (400 - (18*8)) / 2, (240 - 7) / 2);
+		}
+	}
+	#endif
+
 	sg_update_image(sok_image, &(sg_image_data){.subimage[0][0] = SG_RANGE(s_screen_buffer)});
 
 	sg_begin_pass(&(sg_pass) { .action = sok_pass, .swapchain = sglue_swapchain() });
