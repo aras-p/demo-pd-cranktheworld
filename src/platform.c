@@ -237,14 +237,14 @@ void plat_gfx_mark_updated_rows(int start, int end)
 
 static inline void put_pixel_black(uint8_t* row, int x)
 {
-    uint8_t mask = ~(1 << (7 - (x & 7)));
-    row[x >> 3] &= mask;
+	uint8_t mask = ~(1 << (7 - (x & 7)));
+	row[x >> 3] &= mask;
 }
 
 static inline void put_pixel_white(uint8_t* row, int x)
 {
-    uint8_t mask = (1 << (7 - (x & 7)));
-    row[x >> 3] |= mask;
+	uint8_t mask = (1 << (7 - (x & 7)));
+	row[x >> 3] |= mask;
 }
 
 // from fpsunflower/nanofont https://gist.github.com/fpsunflower/7e6311c9580409c115a0
@@ -252,77 +252,77 @@ static inline void put_pixel_white(uint8_t* row, int x)
 // Glyphs from http://font.gohu.org/ (8x14 version, most common ascii characters only)
 // Arguments are the ascii character to print, and x and y positions within the glyph.
 static inline bool glyph_pixel(unsigned int c, unsigned int x, unsigned int y) {
-    c -= 33; x--; if (c > 93 || x > 6 || y > 13) return 0; int i = 98 * c + 7 * y + x;
-    return (("0@P01248@00120000P49B0000000000000:DXlW2UoDX@10008@h;IR4n@R<Y?48000PYDF"
-    "PP011J:U1000<T8QQQDAR4a50000@P012000000000000222448@P024@010028P0148@PP011100000"
-    "ABELDU410000000048@l7124000000000000000H`01100000000n10000000000000000006<0000@P"
-    "P011224488@00000`CXHY:=:D8?0000004<DT01248@000000l4:444444h700000`C8@Ph02D8?0000"
-    "008HX89b?8@P000000n58`7@P05b300000`CP0O25:D8?00000POPP0112248000000l4:D8?Q25b300"
-    "000`CX@Ql1244700000000H`0000<H00000000`P1000H`0110000044444@014@0000000n100PO000"
-    "0000004@014@@@@@0000h948@@@@00120000`G`l5;F\\Lf0n100000l4:DXOQ25:400000hCX@Qn4:D"
-    "X?000000?Q248@P0Ql000000N49DX@Q25i100000hGP01N48@PO00000PO124hAP012000000l4:@PLQ"
-    "25b3000008DX@Qn5:DX@000000748@P0124L00000001248@P25b3000008DT456D8AT@00000P01248"
-    "@P01n10000017G=IbP1364000008dXAU:U:E\\H000000?Q25:DX@Ql000000n4:DX?1248000000`CX"
-    "@Q2U:E4GP0000P?Q25jCR8Q2100000l4:@0?P05b300000l71248@P01200000P@Q25:DX@Ql0000002"
-    "5:D89BT`P1000004<HbT9[:BT800000P@QT8QQ49Q210000013:B4548@P000000h7888888@PO00000"
-    "7248@P01248`10P0148P0148P0148000h01248@P0124>000015A000000000000000000000000h?00"
-    "04@010000000000000000l0bGX@aL10000124XcX@Q25j300000000?Q248@8?000008@Pl5:DX@aL10"
-    "000000`CX@o24`70000`AP01N48@P0100000000l5:DX@aL12T70124XcX@Q25:40000@P0P348@P01>"
-    "00000240HP01248@P0a101248@T47B4940000HP01248@P01L00000000oBV<IbT910000000hCX@Q25"
-    ":400000000?Q25:D8?00000000j<:DX@Qn48@00000`GX@Q25c58@P0000P>S248@P000000000l48P7"
-    "@Pn0000048@`31248@030000000P@Q25:D<G0000000025:T49<H000000004<HbTE5920000000P@QT"
-    "`@BX@0000000025:DX@aL12T70000h744444h70000PS01248>P0124`1001248@P01248@P0007@P01"
-    "24`@P01R30000000S9S10000000"[i / 6] - '0') >> (i % 6)) & 1;
+	c -= 33; x--; if (c > 93 || x > 6 || y > 13) return 0; int i = 98 * c + 7 * y + x;
+	return (("0@P01248@00120000P49B0000000000000:DXlW2UoDX@10008@h;IR4n@R<Y?48000PYDF"
+	"PP011J:U1000<T8QQQDAR4a50000@P012000000000000222448@P024@010028P0148@PP011100000"
+	"ABELDU410000000048@l7124000000000000000H`01100000000n10000000000000000006<0000@P"
+	"P011224488@00000`CXHY:=:D8?0000004<DT01248@000000l4:444444h700000`C8@Ph02D8?0000"
+	"008HX89b?8@P000000n58`7@P05b300000`CP0O25:D8?00000POPP0112248000000l4:D8?Q25b300"
+	"000`CX@Ql1244700000000H`0000<H00000000`P1000H`0110000044444@014@0000000n100PO000"
+	"0000004@014@@@@@0000h948@@@@00120000`G`l5;F\\Lf0n100000l4:DXOQ25:400000hCX@Qn4:D"
+	"X?000000?Q248@P0Ql000000N49DX@Q25i100000hGP01N48@PO00000PO124hAP012000000l4:@PLQ"
+	"25b3000008DX@Qn5:DX@000000748@P0124L00000001248@P25b3000008DT456D8AT@00000P01248"
+	"@P01n10000017G=IbP1364000008dXAU:U:E\\H000000?Q25:DX@Ql000000n4:DX?1248000000`CX"
+	"@Q2U:E4GP0000P?Q25jCR8Q2100000l4:@0?P05b300000l71248@P01200000P@Q25:DX@Ql0000002"
+	"5:D89BT`P1000004<HbT9[:BT800000P@QT8QQ49Q210000013:B4548@P000000h7888888@PO00000"
+	"7248@P01248`10P0148P0148P0148000h01248@P0124>000015A000000000000000000000000h?00"
+	"04@010000000000000000l0bGX@aL10000124XcX@Q25j300000000?Q248@8?000008@Pl5:DX@aL10"
+	"000000`CX@o24`70000`AP01N48@P0100000000l5:DX@aL12T70124XcX@Q25:40000@P0P348@P01>"
+	"00000240HP01248@P0a101248@T47B4940000HP01248@P01L00000000oBV<IbT910000000hCX@Q25"
+	":400000000?Q25:D8?00000000j<:DX@Qn48@00000`GX@Q25c58@P0000P>S248@P000000000l48P7"
+	"@Pn0000048@`31248@030000000P@Q25:D<G0000000025:T49<H000000004<HbTE5920000000P@QT"
+	"`@BX@0000000025:DX@aL12T70000h744444h70000PS01248>P0124`1001248@P01248@P0007@P01"
+	"24`@P01R30000000S9S10000000"[i / 6] - '0') >> (i % 6)) & 1;
 }
 
 static void draw_text(const char* msg, int bx, int by)
 {
-    int lx = bx, ly = by;
-    while (*msg)
-    {
-        // draw glyph
-        for (int y = 0; y < 14; ++y)
-        {
-            int yy = ly + y;
-            if (yy < 0 || yy >= SCREEN_Y) continue;
-            uint8_t* row = s_screen_buffer + yy * SCREEN_STRIDE_BYTES;
-            for (int x = 0; x < 8; ++x)
-            {
-                if (glyph_pixel(*msg, x, y))
-                {
-                    int xx = lx + x;
-                    if (x >= 0 && x < SCREEN_X)
-                        put_pixel_black(row, xx);
-                }
-            }
-        }
-        // move to next character or line
-        if (*msg == '\n') {
-            lx = bx;
-            ly += 14;
-        } else {
-            lx += 8;
-        }
-        ++msg;
-    }
+	int lx = bx, ly = by;
+	while (*msg)
+	{
+		// draw glyph
+		for (int y = 0; y < 14; ++y)
+		{
+			int yy = ly + y;
+			if (yy < 0 || yy >= SCREEN_Y) continue;
+			uint8_t* row = s_screen_buffer + yy * SCREEN_STRIDE_BYTES;
+			for (int x = 0; x < 8; ++x)
+			{
+				if (glyph_pixel(*msg, x, y))
+				{
+					int xx = lx + x;
+					if (x >= 0 && x < SCREEN_X)
+						put_pixel_black(row, xx);
+				}
+			}
+		}
+		// move to next character or line
+		if (*msg == '\n') {
+			lx = bx;
+			ly += 14;
+		} else {
+			lx += 8;
+		}
+		++msg;
+	}
 }
 
 void plat_gfx_draw_stats(float par1)
 {
-    // clear rect to white
-    int rectx = 48;
-    int recty = 16;
-    for (int y = 0; y < recty; ++y)
-    {
-        uint8_t* row = s_screen_buffer + y * SCREEN_STRIDE_BYTES;
-        for (int x = 0; x < rectx / 8; ++x)
-            row[x] = 0xFF;
-    }
+	// clear rect to white
+	int rectx = 48;
+	int recty = 16;
+	for (int y = 0; y < recty; ++y)
+	{
+		uint8_t* row = s_screen_buffer + y * SCREEN_STRIDE_BYTES;
+		for (int x = 0; x < rectx / 8; ++x)
+			row[x] = 0xFF;
+	}
 
-    // draw text
-    char buf[100];
-    snprintf(buf, sizeof(buf), "t %i", (int)par1);
-    draw_text(buf, 1, 1);
+	// draw text
+	char buf[100];
+	snprintf(buf, sizeof(buf), "t %i", (int)par1);
+	draw_text(buf, 1, 1);
 }
 
 static char s_data_path[1000];
@@ -536,16 +536,19 @@ static const char* kSokolVertexSource =
 #ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
+"struct frame_uni { float boxx; float boxy; };\n"
 "struct v2f { float2 uv; float4 pos [[position]]; };\n"
-"vertex v2f vs_main(uint vidx [[vertex_id]])\n"
+"vertex v2f vs_main(uint vidx [[vertex_id]], constant frame_uni& uni [[buffer(0)]]) {\n"
+"    float2 box = float2(uni.boxx, uni.boxy);\n"
 #else
+"cbuffer uni : register(b0) { float boxx; float boxy; };\n"
 "struct v2f { float2 uv : TEXCOORD0; float4 pos : SV_Position; };\n"
-"v2f vs_main(uint vidx: SV_VertexID)\n"
+"v2f vs_main(uint vidx: SV_VertexID) {\n"
+"    float2 box = float2(boxx, boxy);\n"
 #endif
-"{\n"
 "    v2f o;\n"
 "    float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
-"    o.uv = uv;\n"
+"    o.uv = (uv - 0.5) * box + 0.5;\n"
 "    o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "    return o;\n"
 "}\n";
@@ -555,10 +558,12 @@ static const char* kSokolVertexSource =
 #else
 "#version 300 es\n"
 #endif
+"uniform vec2 box;\n"
 "out vec2 uv;\n"
 "void main() {\n"
 "  uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n"
 "  gl_Position = vec4(uv * vec2(2, -2) + vec2(-1, 1), 0, 1);\n"
+"  uv = (uv - vec2(0.5)) * box + vec2(0.5);\n"
 "}";
 #endif
 
@@ -586,6 +591,7 @@ static const char* kSokolFragSource =
 "  uint val = uint(pix * 255.5);\n"
 "  uint mask = 1 << (7 - (x & 7));\n"
 "  float4 col = val & mask ? float4(0.694, 0.686, 0.659, 1.0) : float4(0.192, 0.184, 0.157, 1.0);\n"
+"  if (any(i.uv != saturate(i.uv))) col.rgb = 0.0;\n"
 "  return col;\n"
 "}\n";
 #else
@@ -606,6 +612,7 @@ static const char* kSokolFragSource =
 "  uint val = uint(pix * 255.5);\n"
 "  uint mask = uint(1 << (7 - (int(x) & 7)));\n"
 "  frag_color = ((val & mask) != 0u) ? vec4(0.694, 0.686, 0.659, 1.0) : vec4(0.192, 0.184, 0.157, 1.0);\n"
+"  if (any(notEqual(uv, clamp(uv, 0.0, 1.0)))) frag_color.rgb = vec3(0.0);\n"
 "}\n";
 #endif
 
@@ -614,6 +621,11 @@ static sg_shader sok_shader;
 static sg_pipeline sok_pipe;
 static sg_image sok_image;
 static sg_sampler sok_sampler;
+
+typedef struct frame_uniforms {
+	float boxx;
+	float boxy;
+} frame_uniforms;
 
 static void sapp_init(void)
 {
@@ -639,13 +651,17 @@ static void sapp_init(void)
 	});
 	sok_shader = sg_make_shader(&(sg_shader_desc) {
 		.vs.source = kSokolVertexSource,
-        .vs.entry = "vs_main",
+		.vs.uniform_blocks[0].size = sizeof(frame_uniforms),
+		.vs.uniform_blocks[0].uniforms = {
+			[0] = { .name = "box", .type = SG_UNIFORMTYPE_FLOAT2 },
+		},
+		.vs.entry = "vs_main",
 		.fs = {
 			.images[0].used = true,
 			.samplers[0].used = true,
 			.image_sampler_pairs[0] = { .used = true, .glsl_name = "tex", .image_slot = 0, .sampler_slot = 0 },
 			.source = kSokolFragSource,
-            .entry = "fs_main",
+			.entry = "fs_main",
 		},
 	});
 	sok_pipe = sg_make_pipeline(&(sg_pipeline_desc) {
@@ -694,9 +710,19 @@ static void sapp_frame(void)
 			.samplers[0] = sok_sampler,
 		},
 	};
+	float sx = sapp_widthf();
+	float sy = sapp_heightf();
+	float aspect = sx / sy;
+	float normal = 400.0f / 240.0f;
+	
+	frame_uniforms uni = {
+		.boxx = aspect > normal ? aspect / normal : 1.0f,
+		.boxy = aspect > normal ? 1.0f : normal / aspect
+	};
 
 	sg_apply_pipeline(sok_pipe);
 	sg_apply_bindings(&bind);
+	sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &SG_RANGE(uni));
 	sg_draw(0, 3, 1);
 	sg_end_pass();
 	sg_commit();
@@ -738,9 +764,9 @@ static void sapp_onevent(const sapp_event* evt)
 			s_but_pushed |= kPlatButtonB;
 			s_but_current |= kPlatButtonB;
 		}
-        if (evt->key_code == SAPP_KEYCODE_ESCAPE) {
-            sapp_quit();
-        }
+		if (evt->key_code == SAPP_KEYCODE_ESCAPE) {
+			sapp_quit();
+		}
 	}
 	if (evt->type == SAPP_EVENTTYPE_KEY_UP)
 	{
@@ -783,7 +809,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 #ifdef __APPLE__
 	snprintf(s_data_path, sizeof(s_data_path), "%s", [[NSBundle mainBundle].resourcePath UTF8String]);
 #else
-    strncpy(s_data_path, "data", sizeof(s_data_path));
+	strncpy(s_data_path, "data", sizeof(s_data_path));
 #endif
 
 	sapp_desc res = (sapp_desc) {
@@ -800,8 +826,8 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 
 	// try to load icon
 	int icon_width, icon_height, icon_comp;
-    char icon_path[1000];
-    snprintf(icon_path, sizeof(icon_path), "%s/icon.png", s_data_path);
+	char icon_path[1000];
+	snprintf(icon_path, sizeof(icon_path), "%s/icon.png", s_data_path);
 	uint8_t* icon_image = stbi_load(icon_path, &icon_width, &icon_height, &icon_comp, 4);
 	if (icon_image != NULL) {
 		res.icon.sokol_default = false;
