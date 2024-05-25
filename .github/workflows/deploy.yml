@@ -2,6 +2,15 @@
 name: Deploy Web Demo
 on: workflow_dispatch
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,6 +29,7 @@ jobs:
           cd build
           cmake --preset emscripten-release ..
           cmake --build .
+          mv Nesnausk_CrankTheWorld.html index.html
           mkdir web
           cp *.wasm *.html *.js web
       - name: upload-artifact
@@ -28,3 +38,24 @@ jobs:
           name: webpage
           path: build/web
           retention-days: 1
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup-pages
+        uses: actions/configure-pages@v5
+      - name: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webpage
+      - name: upload-artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: deploy-gh-pages
+        id: deployment
+        uses: actions/deploy-pages@v4
