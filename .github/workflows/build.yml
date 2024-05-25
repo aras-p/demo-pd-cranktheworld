@@ -19,9 +19,9 @@ jobs:
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Debug ..
-          cmake --build .
+          cmake --build . --clean-first
           cmake -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build .
+          cmake --build . --clean-first
   emscripten:
     runs-on: ubuntu-latest
     steps:
@@ -38,6 +38,6 @@ jobs:
           mkdir build
           cd build
           cmake --preset emscripten-debug ..
-          cmake --build .
+          cmake --build . --clean-first
           cmake --preset emscripten-release ..
-          cmake --build .
+          cmake --build . --clean-first
