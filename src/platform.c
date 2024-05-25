@@ -538,16 +538,17 @@ static const char* kSokolVertexSource =
 "using namespace metal;\n"
 "struct frame_uni { float boxx; float boxy; };\n"
 "struct v2f { float2 uv; float4 pos [[position]]; };\n"
-"vertex v2f vs_main(uint vidx [[vertex_id]], constant frame_uni& uni [[buffer(0)]])\n"
+"vertex v2f vs_main(uint vidx [[vertex_id]], constant frame_uni& uni [[buffer(0)]]) {\n"
+"    float2 box = float2(uni.boxx, uni.boxy);\n"
 #else
 "cbuffer uni : register(b0) { float boxx; float boxy; };\n"
 "struct v2f { float2 uv : TEXCOORD0; float4 pos : SV_Position; };\n"
-"v2f vs_main(uint vidx: SV_VertexID)\n"
+"v2f vs_main(uint vidx: SV_VertexID) {\n"
+"    float2 box = float2(boxx, boxy);\n"
 #endif
-"{\n"
 "    v2f o;\n"
 "    float2 uv = float2((vidx << 1) & 2, vidx & 2);\n"
-"    o.uv = (uv - 0.5) * float2(uni.boxx, uni.boxy) + 0.5;\n"
+"    o.uv = (uv - 0.5) * box + 0.5;\n"
 "    o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "    return o;\n"
 "}\n";
