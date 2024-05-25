@@ -200,7 +200,7 @@ bool wav_parse_header(const void* data, size_t data_size, wav_file_desc* res)
 		}
 		else
 		{
-			res->sample_count = (uint64_t)(res->sample_data_size / res->channel_count) * 8 / format->bits_per_sample;
+			res->sample_count = (int)((uint64_t)(res->sample_data_size / res->channel_count) * 8 / format->bits_per_sample);
 		}
 	}
 
