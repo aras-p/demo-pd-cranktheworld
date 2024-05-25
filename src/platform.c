@@ -181,6 +181,8 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #define SOKOL_METAL
 #elif defined(_WIN32)
 #define SOKOL_D3D11
+#elif defined(__EMSCRIPTEN__)
+#define SOKOL_GLES3
 #else
 #define SOKOL_GLCORE
 #endif
@@ -548,8 +550,11 @@ static const char* kSokolVertexSource =
 "    return o;\n"
 "}\n";
 #else
-// GLSL
+#ifdef SOKOL_GLCORE
 "#version 410\n"
+#else
+"#version 300 es\n"
+#endif
 "out vec2 uv;\n"
 "void main() {\n"
 "  uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n"
@@ -584,18 +589,23 @@ static const char* kSokolFragSource =
 "  return col;\n"
 "}\n";
 #else
-// GLSL
+#ifdef SOKOL_GLCORE
 "#version 410\n"
+#else
+"#version 300 es\n"
+"precision highp float;\n"
+"precision highp int;\n"
+#endif
 "uniform sampler2D tex;\n"
 "in vec2 uv;\n"
 "out vec4 frag_color;\n"
 "void main() {\n"
-"  int x = int(uv.x * 400);\n"
-"  int y = int(uv.y * 240);\n"
+"  int x = int(uv.x * 400.0);\n"
+"  int y = int(uv.y * 240.0);\n"
 "  float pix = texelFetch(tex, ivec2(x>>3, y), 0).x;\n"
 "  uint val = uint(pix * 255.5);\n"
-"  uint mask = 1 << (7 - (x & 7));\n"
-"  frag_color = ((val & mask) != 0) ? vec4(0.694, 0.686, 0.659, 1.0) : vec4(0.192, 0.184, 0.157, 1.0);\n"
+"  uint mask = uint(1 << (7 - (int(x) & 7)));\n"
+"  frag_color = ((val & mask) != 0u) ? vec4(0.694, 0.686, 0.659, 1.0) : vec4(0.192, 0.184, 0.157, 1.0);\n"
 "}\n";
 #endif
 
