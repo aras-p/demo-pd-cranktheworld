@@ -54,6 +54,7 @@ The demo can be built for several "platforms":
 - Playdate device itself,
 - Playdate SDK simulator,
 - Regular PC (Windows/Mac/Linux) binary. This one does not require having Playdate or the SDK for it.
+- Web via Emscripten (see separate build instructions below)
 
 On Windows / Visual Studio, easiest is opening the folder directly from within VS. Then pick one of the configuration configs and build.
 The actual Playdate (and simulator) builds I only tried on Windows. They may or might not work when done on other host platforms.
@@ -68,6 +69,41 @@ cmake --build . --config Release
 
 On Linux, you might need to have these installed: `libglu1-mesa-dev`, `mesa-common-dev`, `xorg-dev`, `libasound-dev`.
 
+### Building for Emscripten
+
+Building for Emscripten is best done on macOS or Linux. For Windows, cmake might need to be instructed to use the
+"UNIX Makefiles" or "Ninja" generator.
+
+First setup the Emscripten SDK into the root of the project directory:
+
+```
+git clone https://github.com/emscripten-core/emsdk
+cd emsdk
+./emsdk install 3.1.60
+./emsdk activate 3.1.60
+cd ..
+```
+
+...back in the project root directory:
+
+```
+mkdir build
+cd build
+cmake --preset emscripten-release ..
+cmake --build .
+```
+
+...this will build 3 files (Nesnausk_CrankTheWorld.wasm/.html/.js).
+
+Finally run the build result via
+
+```
+../emsdk/upstream/emscripten/emrun Nesnausk_CrankTheWorld.html
+```
+
+You may need to click/tap into the browser for the audio or even whole demo
+to start (more recent Safari versions seem to freeze the whole application
+until the audio context is resumed via a click).
 
 ### License
 
