@@ -18,5 +18,23 @@ jobs:
       - run: |
           mkdir build
           cd build
-          cmake ..
+          cmake -DCMAKE_BUILD_TYPE=Debug ..
+          cmake --build .
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build .
+  emscripten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: prepare
+        run: |
+          git clone https://github.com/emscripten-core/emsdk
+          ./emsdk install 3.1.60
+          ./emsdk activate 3.1.60
+          cd ..
+      - name: build
+        run: |
+          mkdir build
+          cd build
+          cmake --preset emscripten-release ..
           cmake --build .
